@@ -1,4 +1,4 @@
-            <?php
+<?php
 session_start();
 if (!isset($_SESSION['user'])) {
     header('Location: auth/login.php');
@@ -14,7 +14,8 @@ if (!isset($_SESSION['user'])) {
     <title>Simera | Sistema Gestion Turnos</title>
 
     <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="../plugins/fontawesome-free/css/all.min.css">
     <!-- Theme style -->
@@ -39,7 +40,7 @@ if (!isset($_SESSION['user'])) {
             <ul class="navbar-nav ml-auto">
                 <li class="nav-item dropdown">
                     <a class="nav-link" data-toggle="dropdown" href="#">
-                        <i class="far fa-user"></i> <?php echo htmlspecialchars($_SESSION['user']['usuanomred']); ?>
+                        <i class="far fa-user"></i> <?php echo htmlspecialchars($_SESSION['user']['usuanom']); ?>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right">
                         <a href="#" class="dropdown-item">
@@ -59,7 +60,8 @@ if (!isset($_SESSION['user'])) {
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <!-- Brand Logo -->
             <a href="home.php" class="brand-link">
-                <img src="../dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8">
+                <img src="../dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3"
+                    style="opacity: .8">
                 <span class="brand-text font-weight-light">Promarisco</span>
             </a>
 
@@ -74,9 +76,9 @@ if (!isset($_SESSION['user'])) {
                         <a href="#" class="d-block"><?php echo htmlspecialchars($_SESSION['user']['usuanomred']); ?></a>
                         <?php if (isset($_SESSION['user']['profiles'])): ?>
                             <small>
-                                <?php 
-                                    $profiles = array_column($_SESSION['user']['profiles'], 'perfdesc');
-                                    echo htmlspecialchars(implode(', ', $profiles));
+                                <?php
+                                $profiles = array_column($_SESSION['user']['profiles'], 'perfdesc');
+                                echo htmlspecialchars(implode(', ', $profiles));
                                 ?>
                             </small>
                         <?php endif; ?>
@@ -86,7 +88,8 @@ if (!isset($_SESSION['user'])) {
                 <!-- SidebarSearch Form -->
                 <div class="form-inline">
                     <div class="input-group" data-widget="sidebar-search">
-                        <input class="form-control form-control-sidebar" type="search" placeholder="Buscar..." aria-label="Search">
+                        <input class="form-control form-control-sidebar" type="search" placeholder="Buscar..."
+                            aria-label="Search">
                         <div class="input-group-append">
                             <button class="btn btn-sidebar">
                                 <i class="fas fa-search fa-fw"></i>
@@ -97,36 +100,63 @@ if (!isset($_SESSION['user'])) {
 
                 <!-- Sidebar Menu -->
                 <nav class="mt-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                        data-accordion="false">
                         <li class="nav-header">SIMERA</li>
-                        
                         <?php if (isset($_SESSION['menu']) && !empty($_SESSION['menu'])): ?>
                             <?php foreach ($_SESSION['menu'] as $item): ?>
-                                <li class="nav-item<?php echo !empty($item['submenu']) ? ' has-treeview' : ''; ?>">
-                                    <a href="<?php echo !empty($item['main']['SeAplNombreObjeto']) ? htmlspecialchars($item['main']['SeAplNombreObjeto']) : '#'; ?>" 
-                                       class="nav-link">
-                                        <i class="nav-icon <?php echo htmlspecialchars($item['main']['SeAplFontIcon']); ?>"></i>
-                                        <p>
-                                            <?php echo htmlspecialchars($item['main']['SeAplDescripcion']); ?>
-                                            <?php if (!empty($item['submenu'])): ?>
-                                                <i class="right fas fa-angle-left"></i>
-                                            <?php endif; ?>
-                                        </p>
-                                    </a>
-                                    
-                                    <?php if (!empty($item['submenu'])): ?>
-                                        <ul class="nav nav-treeview">
-                                            <?php foreach ($item['submenu'] as $subitem): ?>
-                                                <li class="nav-item">
-                                                    <a href="<?php echo htmlspecialchars($subitem['SeAplNombreObjeto']); ?>" class="nav-link">
-                                                        <i class="<?php echo htmlspecialchars($subitem['SeAplFontIcon']); ?> nav-icon"></i>
-                                                        <p><?php echo htmlspecialchars($subitem['SeAplDescripcion']); ?></p>
-                                                    </a>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php endif; ?>
-                                </li>
+                                <?php if (isset($item['main']) && is_array($item['main'])): ?>
+                                    <li class="nav-item<?php echo !empty($item['submenu']) ? ' has-treeview' : ''; ?>">
+                                        <a href="<?php echo isset($item['main']['SeAplNombreObjeto']) ? htmlspecialchars($item['main']['SeAplNombreObjeto']) : '#'; ?>"
+                                            class="nav-link">
+                                            <i
+                                                class="nav-icon <?php echo isset($item['main']['SeAplFontIcon']) ? htmlspecialchars($item['main']['SeAplFontIcon']) : 'fas fa-circle'; ?>"></i>
+                                            <p>
+                                                <?php echo isset($item['main']['SeAplDescripcion']) ? htmlspecialchars($item['main']['SeAplDescripcion']) : 'Menú'; ?>
+                                                <?php if (!empty($item['submenu'])): ?>
+                                                    <i class="right fas fa-angle-left"></i>
+                                                <?php endif; ?>
+                                            </p>
+                                        </a>
+
+                                        <?php if (!empty($item['submenu'])): ?>
+                                            <ul class="nav nav-treeview">
+                                                <?php foreach ($item['submenu'] as $subitem): ?>
+                                                    <li
+                                                        class="nav-item<?php echo !empty($subitem['applications']) ? ' has-treeview' : ''; ?>">
+                                                        <a href="<?php echo isset($subitem['main']['SeAplNombreObjeto']) ? htmlspecialchars($subitem['main']['SeAplNombreObjeto']) : '#'; ?>"
+                                                            class="nav-link">
+                                                            <i
+                                                                class="<?php echo isset($subitem['main']['SeAplFontIcon']) ? htmlspecialchars($subitem['main']['SeAplFontIcon']) : 'fas fa-circle'; ?> nav-icon"></i>
+                                                            <p>
+                                                                <?php echo isset($subitem['main']['SeAplDescripcion']) ? htmlspecialchars($subitem['main']['SeAplDescripcion']) : 'Submenú'; ?>
+                                                                <?php if (!empty($subitem['applications'])): ?>
+                                                                    <i class="right fas fa-angle-left"></i>
+                                                                <?php endif; ?>
+                                                            </p>
+                                                        </a>
+
+                                                        <?php if (!empty($subitem['applications'])): ?>
+                                                            <ul class="nav nav-treeview">
+                                                                <?php foreach ($subitem['applications'] as $app): ?>
+                                                                    <li class="nav-item">
+                                                                        <a href="<?php echo isset($app['SeAplNombreObjeto']) ? htmlspecialchars($app['SeAplNombreObjeto']) : '#'; ?>"
+                                                                            class="nav-link">
+                                                                            <i
+                                                                                class="<?php echo isset($app['SeAplFontIcon']) ? htmlspecialchars($app['SeAplFontIcon']) : 'fas fa-circle'; ?> nav-icon"></i>
+                                                                            <p><?php echo isset($app['SeAplDescripcion']) ? htmlspecialchars($app['SeAplDescripcion']) : 'Aplicación'; ?>
+                                                                            </p>
+                                                                        </a>
+                                                                    </li>
+                                                                <?php endforeach; ?>
+                                                            </ul>
+                                                        <?php endif; ?>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        <?php endif; ?>
+                                    </li>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <li class="nav-item">
@@ -151,7 +181,8 @@ if (!isset($_SESSION['user'])) {
                         aria-haspopup="true" aria-expanded="false">Cerrar</a>
                     <div class="dropdown-menu mt-0">
                         <a class="dropdown-item" href="#" data-widget="iframe-close" data-type="all">Cerrar Todos</a>
-                        <a class="dropdown-item" href="#" data-widget="iframe-close" data-type="all-other">Cerrar Otros</a>
+                        <a class="dropdown-item" href="#" data-widget="iframe-close" data-type="all-other">Cerrar
+                            Otros</a>
                     </div>
                 </div>
                 <a class="nav-link bg-light" href="#" data-widget="iframe-scrollleft"><i
@@ -205,21 +236,22 @@ if (!isset($_SESSION['user'])) {
     <script src="../dist/js/adminlte.js"></script>
     <!-- AdminLTE for demo purposes -->
     <script src="../dist/js/demo.js"></script>
-    
+
     <script>
-    // Activar menús según la página actual
-    $(document).ready(function() {
-        var currentUrl = window.location.pathname.split('/').pop() || 'home.php';
-        
-        $('.nav-item a').each(function() {
-            var menuUrl = $(this).attr('href').split('/').pop();
-            if (currentUrl === menuUrl) {
-                $(this).addClass('active');
-                $(this).parents('.has-treeview').addClass('menu-open');
-                $(this).parents('.has-treeview').find('> a').addClass('active');
-            }
+        // Activar menús según la página actual
+        $(document).ready(function () {
+            var currentUrl = window.location.pathname.split('/').pop() || 'home.php';
+
+            $('.nav-item a').each(function () {
+                var menuUrl = $(this).attr('href').split('/').pop();
+                if (currentUrl === menuUrl) {
+                    $(this).addClass('active');
+                    $(this).parents('.has-treeview').addClass('menu-open');
+                    $(this).parents('.has-treeview').find('> a').addClass('active');
+                }
+            });
         });
-    });
     </script>
 </body>
+
 </html>
