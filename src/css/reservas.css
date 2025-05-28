@@ -1,0 +1,246 @@
+/* Estilos para el calendario */
+#calendar {
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.fc-event {
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fc-event:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.fc-event-content {
+    padding: 5px;
+}
+
+.fc-event-title {
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+.fc-event-programa {
+    font-size: 0.85em;
+    opacity: 0.9;
+}
+
+.fc-event-actions {
+    margin-top: 5px;
+    text-align: right;
+}
+
+.fc-event-delete {
+    padding: 0 5px;
+    font-size: 0.8em;
+}
+
+/* Estilos para el modal */
+#modal-reserva .modal-dialog {
+    max-width: 600px;
+}
+
+#modal-reserva .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Estilos para los select2 */
+.select2-container--bootstrap4 .select2-selection {
+    height: calc(2.25rem + 2px);
+    padding: .375rem .75rem;
+}
+
+/* Estilos para los toast */
+.jq-toast-wrap {
+    width: 350px;
+}
+
+.jq-toast-single {
+    padding: 15px;
+    font-size: 14px;
+}
+
+/* Overlay de carga */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.overlay-wrapper {
+    position: relative;
+}
+
+/* Estilos para la lista de programas */
+.programa-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.programa-item:hover {
+    background-color: #f5f5f5;
+}
+
+.programa-item.active {
+    background-color: #e3f2fd;
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+    #calendar {
+        margin-top: 20px;
+    }
+    
+    .fc-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .fc-toolbar-chunk {
+        margin-bottom: 10px;
+    }
+}
+.toast-alert {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px;
+    border-radius: 5px;
+    color: white;
+    max-width: 300px;
+    display: none;
+    z-index: 9999;
+}
+
+.toast-error {
+    background-color: #dc3545;
+}
+
+.toast-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.toast-success {
+    background-color: #28a745;
+}
+
+.toast-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+/* Toast notifications */
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    display: none;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    color: white;
+    max-width: 300px;
+    animation: fadeIn 0.3s;
+}
+
+.toast-error {
+    background-color: #dc3545;
+}
+
+.toast-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.toast-success {
+    background-color: #28a745;
+}
+
+.toast-icon {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.toast-message {
+    display: inline-block;
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.loading-overlay .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Calendar event styles */
+.fc-event-content {
+    padding: 2px 5px;
+}
+
+.fc-event-title {
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.fc-event-programa {
+    font-size: 0.8em;
+    opacity: 0.9;
+}
+
+.fc-event-actions {
+    margin-top: 3px;
+    text-align: right;
+}
+
+.fc-event-actions button {
+    padding: 0 3px;
+    font-size: 0.7em;
+    line-height: 1;
+}
+
+/* Animations */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

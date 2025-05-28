@@ -94,7 +94,7 @@
     </div>
 
     <div class="form-group">
-        <input type="hidden" name="SeAplUserCreacion" value="<?= $_SESSION['user']['usuario_codigo'] ?>">
+        <input type="hidden" name="SeAplUserCreacion" class="form-control" value="<?= htmlspecialchars($_POST['SeAplUserCreacion'] ?? '01005') ?>" maxlength="10" pattern="[0-9]{1,10}" title="Solo números, máximo 10 dígitos">
         <input type="hidden" name="SeAplUserModificacion" value="<?= $_SESSION['user']['usuario_codigo'] ?>">
         
         <button type="submit" class="btn btn-primary">

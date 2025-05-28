@@ -43,22 +43,26 @@ class AplicacionesController
     {
         try {
             $id = $_POST['SeAplCodigo'] ?? null;
+            // Validar y limpiar el código de usuario
+            $userCode = $_POST['SeAplUserCreacion'] ?? '01005';
+            $userCode = preg_replace('/[^0-9]/', '', $userCode); // Solo números
+            $userCode = substr($userCode, 0, 10); // Asegurar longitud máxima
             $data = [
-                'SeAplDescripcion' => $_POST['SeAplDescripcion'],
-                'SeAplFontIcon' => $_POST['SeAplFontIcon'],
-                'SeAplTipo' => $_POST['SeAplTipo'],
-                'SeAplEstado' => $_POST['SeAplEstado'],
-                'sistcod' => $_POST['sistcod'],
-                'SeAplUserCreacion' => $_POST['SeAplUserCreacion'] ?? '01005', // Valor por defecto si no existe
-                'SeAplUserModificacion' => $_POST['SeAplUserModificacion'] ?? '01005', // Valor por defecto
-                'SeAplNombreObjeto' => $_POST['SeAplNombreObjeto'],
-                'SeAplOrden' => $_POST['SeAplOrden'],
-                'SeAplCodigoSt' => $_POST['SeAplCodigoSt'] ?? NULL
+                'SeAplDescripcion' => substr($_POST['SeAplDescripcion'], 0, 100), // Ejemplo: limitar a 100 caracteres
+                'SeAplFontIcon' => substr($_POST['SeAplFontIcon'], 0, 50),
+                'SeAplTipo' => substr($_POST['SeAplTipo'], 0, 3), // MEN, SUB, APL
+                'SeAplEstado' => substr($_POST['SeAplEstado'], 0, 1), // A o I
+                'SeAplCodigoSt' => !empty($_POST['SeAplCodigoSt']) ? substr($_POST['SeAplCodigoSt'], 0, 10) : NULL,
+                'sistcod' => substr($_POST['sistcod'], 0, 10),
+                'SeAplUserCreacion' => $userCode,
+                'SeAplUserModificacion' => $userCode, // Mismo usuario para modificación
+                'SeAplNombreObjeto' => substr($_POST['SeAplNombreObjeto'], 0, 255),
+                'SeAplOrden' => (int)$_POST['SeAplOrden']
             ];
-
+           
             // Validación adicional
-            if (empty($data['SeAplUserModificacion'])) {
-                throw new Exception("El código de usuario modificador es requerido");
+            if (empty($data['SeAplUserCreacion'])) {
+                throw new Exception("El código de usuario es requerido");
             }
 
             if ($id) {

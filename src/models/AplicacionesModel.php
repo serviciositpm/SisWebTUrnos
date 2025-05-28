@@ -61,38 +61,62 @@ class AplicacionesModel
 
     public function crearAplicacion($data)
     {
-        $query = "INSERT INTO dbo.SeAplicacionSis (
+        // Verificar longitudes máximas (ajusta según tu esquema de base de datos)
+        $maxLengths = [
+            'SeAplDescripcion' => 100,
+            'SeAplFontIcon' => 50,
+            'SeAplTipo' => 3,
+            'SeAplEstado' => 1,
+            'sistcod' => 10,
+            'SeAplUserCreacion' => 10,
+            'SeAplUserModificacion' => 10,
+            'SeAplNombreObjeto' => 255,
+            'SeAplCodigoSt' => 10
+        ];
+
+        foreach ($maxLengths as $field => $max) {
+            if (isset($data[$field]) && is_string($data[$field]) && strlen($data[$field]) > $max) {
+                throw new Exception("El campo $field excede la longitud máxima de $max caracteres");
+            }
+        }
+
+        $query = "INSERT INTO SeAplicacionSis (
         SeAplDescripcion, 
         SeAplFontIcon, 
         SeAplTipo, 
         SeAplEstado, 
+        SeAplCodigoSt,
         sistcod, 
         SeAplUserCreacion, 
         SeAplFecCreacion, 
         SeAplUserModificacion,
         SeAplFecModficiacion,
         SeAplNombreObjeto, 
-        SeAplOrden, 
-        SeAplCodigoSt
-    ) VALUES (?, ?, ?, ?, ?, ?, GETDATE(), ?, GETDATE(), ?, ?, ?)";
+        SeAplOrden
+    ) VALUES (?, ?, ?, ?, ?, ?, ?,GETDATE(), ?, GETDATE() , ?, ?)";
 
         $params = [
             $data['SeAplDescripcion'],
             $data['SeAplFontIcon'],
             $data['SeAplTipo'],
             $data['SeAplEstado'],
+            !empty($data['SeAplCodigoSt']) ? $data['SeAplCodigoSt'] : NULL,
             $data['sistcod'],
             $data['SeAplUserCreacion'],
-            $data['SeAplUserModificacion'], // Asegúrate que este valor no sea NULL
+            $data['SeAplUserModificacion'],
             $data['SeAplNombreObjeto'],
-            $data['SeAplOrden'],
-            !empty($data['SeAplCodigoSt']) ? $data['SeAplCodigoSt'] : NULL
+            $data['SeAplOrden']
         ];
 
         $stmt = sqlsrv_query($this->db, $query, $params);
 
         if ($stmt === false) {
-            throw new Exception("Error al crear aplicación: " . print_r(sqlsrv_errors(), true));
+            $errors = sqlsrv_errors();
+            $errorMsg = "Error al crear aplicación: ";
+            foreach ($errors as $error) {
+                $errorMsg .= "SQLSTATE: " . $error['SQLSTATE'] . " Code: " . $error['code'] . " Message: " . $error['message'];
+            }
+            throw new Exception($errorMsg);
         }
 
         return true;
