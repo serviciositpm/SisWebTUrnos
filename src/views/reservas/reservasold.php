@@ -22,6 +22,7 @@ if (!isset($_SESSION['user'])) {
     <link rel="stylesheet" href="../../plugins/select2/css/select2.min.css">
     <link rel="stylesheet" href="../../plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
     <!-- Bootstrap Datepicker -->
+    <!-- <link rel="stylesheet" href="../../plugins/bootstrap-datepicker/css/bootstrap-datepicker.min.css"> -->
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
     <!-- Theme style -->
@@ -78,56 +79,6 @@ if (!isset($_SESSION['user'])) {
             height: 200px;
         }
 
-        .hour-slot {
-            border: 1px solid #dee2e6;
-            margin-bottom: 5px;
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .hour-slot:hover {
-            background-color: #f8f9fa;
-        }
-
-        .hour-slot.selected {
-            background-color: #e7f5ff;
-            border-color: #4dabf7;
-        }
-
-        .hour-slot.disabled {
-            background-color: #f8f9fa;
-            color: #adb5bd;
-            cursor: not-allowed;
-        }
-
-        .reservation-item {
-            display: inline-block;
-            margin-right: 5px;
-            margin-bottom: 5px;
-            padding: 5px 8px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            color: white;
-            position: relative;
-        }
-
-        .reservation-item:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
-            color: #fff;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            z-index: 100;
-        }
-
         @media (max-width: 992px) {
 
             .left-panel,
@@ -141,6 +92,8 @@ if (!isset($_SESSION['user'])) {
 <body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
         <!-- Navbar y Sidebar se incluyen desde home.php -->
+
+
         <!-- Contenido principal -->
         <div class="content-wrapper">
             <!-- Encabezado -->
@@ -235,10 +188,10 @@ if (!isset($_SESSION['user'])) {
 
                         <!-- Panel derecho -->
                         <div class="right-panel">
-                            <div class="card card-warning card-outline">
+                            <div class="card card-warning card-outline direct-chat direct-chat-warning">
                                 <div class="card-header">
                                     <h3 class="card-title">
-                                        <i class="fas fa-clock mr-2"></i>Horarios Disponibles
+                                        <i class="fas fa-clipboard-list mr-2"></i>Detalles de Reserva
                                     </h3>
                                     <div class="card-tools">
                                         <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -247,12 +200,10 @@ if (!isset($_SESSION['user'])) {
                                     </div>
                                 </div>
                                 <div class="card-body">
-                                    <div id="horariosContainer">
-                                        <div class="text-center py-5">
-                                            <i class="fas fa-info-circle fa-4x text-muted mb-3"></i>
-                                            <h4 class="text-muted">Seleccione una camaronera, fecha y programa</h4>
-                                            <p class="text-muted">Para ver los horarios disponibles</p>
-                                        </div>
+                                    <div id="detalleReserva" class="text-center py-5">
+                                        <i class="fas fa-info-circle fa-4x text-muted mb-3"></i>
+                                        <h4 class="text-muted">Seleccione un programa de pesca</h4>
+                                        <p class="text-muted">Para ver los detalles y realizar una reserva</p>
                                     </div>
                                 </div>
                             </div>
@@ -263,53 +214,6 @@ if (!isset($_SESSION['user'])) {
         </div>
     </div>
 
-    <!-- Modal para registrar reserva -->
-    <div class="modal fade" id="reservaModal" tabindex="-1" role="dialog" aria-labelledby="reservaModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header bg-primary">
-                    <h5 class="modal-title" id="reservaModalLabel">Registrar Reserva</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="formReserva">
-                        <div class="form-group">
-                            <label>Camaronera:</label>
-                            <input type="text" class="form-control" id="modalCamaronera" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label>Programa de Pesca:</label>
-                            <input type="text" class="form-control" id="modalPrograma" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label>Fecha:</label>
-                            <input type="text" class="form-control" id="modalFecha" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label>Hora seleccionada:</label>
-                            <input type="text" class="form-control" id="modalHora" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label for="modalKilos">Kilos a reservar:</label>
-                            <input type="number" class="form-control" id="modalKilos" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="modalObservaciones">Observaciones:</label>
-                            <textarea class="form-control" id="modalObservaciones" rows="3"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btnGuardarReserva">Guardar Reserva</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- jQuery -->
     <script src="../../plugins/jquery/jquery.min.js"></script>
     <!-- Bootstrap 4 -->
@@ -317,9 +221,11 @@ if (!isset($_SESSION['user'])) {
     <!-- Select2 -->
     <script src="../../plugins/select2/js/select2.full.min.js"></script>
     <!-- Bootstrap Datepicker -->
+    <!-- <script src="../../plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script> -->
     <script
         src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <!-- <script src="../../plugins/bootstrap-datepicker/locales/bootstrap-datepicker.es.min.js"></script> -->
     <script
         src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.es.min.js"></script>
     <!-- AdminLTE App -->
@@ -327,18 +233,6 @@ if (!isset($_SESSION['user'])) {
 
     <script>
         $(document).ready(function () {
-            // Variables globales
-            let selectedPrograma = null;
-            let selectedCamaronera = null;
-            let selectedFecha = null;
-            let reservasExistentes = [];
-
-            // Colores para las reservas
-            const coloresReservas = [
-                'bg-primary', 'bg-success', 'bg-info', 'bg-warning', 'bg-danger',
-                'bg-secondary', 'bg-purple', 'bg-pink', 'bg-indigo', 'bg-teal'
-            ];
-
             // Inicializar select2
             $('.select2').select2({
                 theme: 'bootstrap4',
@@ -360,33 +254,16 @@ if (!isset($_SESSION['user'])) {
 
             // Eventos
             $('#camaroneraSelect').change(function () {
-                selectedCamaronera = $(this).val();
                 if ($(this).val() && $('#fechaReserva').val()) {
                     cargarProgramasPesca($(this).val(), $('#fechaReserva').val());
-                } else {
-                    limpiarHorarios();
                 }
             });
 
             $('#fechaReserva').change(function () {
-                selectedFecha = $(this).val();
                 if ($('#camaroneraSelect').val() && $(this).val()) {
                     cargarProgramasPesca($('#camaroneraSelect').val(), $(this).val());
-                } else {
-                    limpiarHorarios();
                 }
             });
-
-            // Función para limpiar horarios
-            function limpiarHorarios() {
-                $('#horariosContainer').html(`
-                    <div class="text-center py-5">
-                        <i class="fas fa-info-circle fa-4x text-muted mb-3"></i>
-                        <h4 class="text-muted">Seleccione una camaronera, fecha y programa</h4>
-                        <p class="text-muted">Para ver los horarios disponibles</p>
-                    </div>
-                `);
-            }
 
             // Función para cargar camaroneras
             function cargarCamaroneras() {
@@ -398,7 +275,7 @@ if (!isset($_SESSION['user'])) {
                         $('#camaroneraSelect').prop('disabled', true);
                     },
                     success: function (data) {
-                        console.log("Datos recibidos:", data);
+                        console.log("Datos recibidos:", data); // Para depuración
 
                         if (data.error) {
                             toastr.error(data.error);
@@ -450,8 +327,7 @@ if (!isset($_SESSION['user'])) {
                                 var programaHtml = `
                                 <div class="info-box shadow-sm mb-2 info-box-programa" 
                                      data-pescno="${programa.PescNo}" 
-                                     data-pescfec="${programa.PescFec}"
-                                     data-pesccant="${programa.PescCanRea}">
+                                     data-pescfec="${programa.PescFec}">
                                     <span class="info-box-icon bg-info"><i class="fas fa-fish"></i></span>
                                     <div class="info-box-content">
                                         <span class="info-box-text">Programa #${programa.PescNo}</span>
@@ -472,16 +348,7 @@ if (!isset($_SESSION['user'])) {
                             $('.info-box-programa').click(function () {
                                 $('.info-box-programa').removeClass('selected');
                                 $(this).addClass('selected');
-
-                                // Guardar programa seleccionado
-                                selectedPrograma = {
-                                    numero: $(this).data('pescno'),
-                                    fecha: $(this).data('pescfec'),
-                                    cantidad: $(this).data('pesccant')
-                                };
-
-                                // Cargar horarios y reservas existentes
-                                cargarHorariosYReservas();
+                                mostrarDetallePrograma($(this).data('pescno'), $(this).data('pescfec'));
                             });
                         } else {
                             $('#programasContainer').html(`
@@ -505,181 +372,81 @@ if (!isset($_SESSION['user'])) {
                 });
             }
 
-            // Función para cargar horarios y reservas existentes
-            function cargarHorariosYReservas() {
-                if (!selectedFecha) {
-                    return;
-                }
-
-                // Mostrar loading
-                $('#horariosContainer').html(`
-                    <div class="loading-container">
-                        <div class="text-center py-4">
-                            <i class="fas fa-spinner fa-spin fa-2x"></i>
-                            <p class="mt-2">Cargando horarios...</p>
-                        </div>
+            // Función para mostrar detalles del programa seleccionado
+            function mostrarDetallePrograma(pescNo, pescFec) {
+                var detalleHtml = `
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Programa #${pescNo}</h3>
                     </div>
-                `);
-
-                // Obtener reservas existentes para esta fecha, camaronera y programa
-                $.ajax({
-                    url: '../../controllers/ReservaController.php?action=getReservasExistentes',
-                    type: 'GET',
-                    data: {
-                        fecha: selectedFecha
-                    },
-                    dataType: 'json',
-                    success: function (data) {
-                        reservasExistentes = Array.isArray(data) ? data : [];
-                        generarHorarios();
-                    },
-                    error: function (xhr, status, error) {
-                        console.error("Error al cargar reservas existentes:", error);
-                        toastr.error("Error al cargar reservas existentes");
-                        reservasExistentes = [];
-                        generarHorarios();
-                    }
-                });
-            }
-
-            // Función para generar los horarios
-            function generarHorarios() {
-                let html = '<div class="row">';
-
-                // Generar horarios de 00:00 a 23:00
-                for (let hora = 0; hora < 24; hora++) {
-                    const horaFormateada = hora.toString().padStart(2, '0') + ':00';
-
-                    // Buscar reservas para esta hora
-                    const reservasHora = reservasExistentes.filter(r => {
-                        const fechaHora = new Date(r.GeReHora);
-                        return fechaHora.getHours() === hora;
-                    });
-
-                    html += `
-                        <div class="col-md-4 col-sm-6">
-                            <div class="hour-slot" data-hora="${horaFormateada}">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <strong>${horaFormateada}</strong>
-                                    <button class="btn btn-xs btn-primary btn-reservar" data-hora="${horaFormateada}">
-                                        <i class="fas fa-plus"></i> Reservar
-                                    </button>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-info-circle mr-2"></i>Información del Programa</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Fecha:</dt>
+                                            <dd class="col-sm-8">${formatFecha(pescFec)}</dd>
+                                            
+                                            <dt class="col-sm-4">Número:</dt>
+                                            <dd class="col-sm-8">${pescNo}</dd>
+                                            
+                                            <dt class="col-sm-4">Camaronera:</dt>
+                                            <dd class="col-sm-8">${$('#camaroneraSelect option:selected').text()}</dd>
+                                            
+                                            <dt class="col-sm-4">Estado:</dt>
+                                            <dd class="col-sm-8"><span class="badge bg-success">Disponible</span></dd>
+                                        </dl>
+                                    </div>
                                 </div>
-                                <div class="reservas-hora mt-2">`;
-
-                    // Mostrar reservas existentes para esta hora
-                    if (reservasHora.length > 0) {
-                        reservasHora.forEach((reserva, index) => {
-                            const colorIndex = index % coloresReservas.length;
-                            html += `
-                                <span class="reservation-item ${coloresReservas[colorIndex]}" 
-                                      data-tooltip="Camaronera: ${reserva.CamaNomCom || 'N/A'}&#10;Kilos: ${reserva.GeReKilos}">
-                                    ${reserva.CamaNomCom || 'Cama.'}: ${reserva.GeReKilos} kg
-                                </span>
-                            `;
-                        });
-                    } else {
-                        html += '<small class="text-muted">No hay reservas</small>';
-                    }
-
-                    html += `
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-calendar-plus mr-2"></i>Realizar Reserva</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="formReserva">
+                                            <div class="form-group">
+                                                <label for="cantidadReserva">Cantidad a Reservar</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="cantidadReserva" min="1" required>
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">unidades</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="observaciones">Observaciones</label>
+                                                <textarea class="form-control" id="observaciones" rows="3" placeholder="Ingrese cualquier observación adicional"></textarea>
+                                            </div>
+                                            <div class="form-group">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input class="custom-control-input" type="checkbox" id="confirmacion" required>
+                                                    <label for="confirmacion" class="custom-control-label">Confirmo que los datos son correctos</label>
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary btn-block">
+                                                <i class="fas fa-save mr-2"></i>Guardar Reserva
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    `;
-                }
+                    </div>
+                </div>
+            `;
 
-                html += '</div>';
-                $('#horariosContainer').html(html);
+                $('#detalleReserva').html(detalleHtml);
 
-                // Evento para el botón de reservar
-                $('.btn-reservar').click(function (e) {
-                    e.stopPropagation();
-                    const horaSeleccionada = $(this).data('hora');
-                    abrirModalReserva(horaSeleccionada);
-                });
-
-                // Evento para seleccionar horario
-                $('.hour-slot').click(function () {
-                    $('.hour-slot').removeClass('selected');
-                    $(this).addClass('selected');
-                });
-            }
-
-            // Función para abrir modal de reserva
-            function abrirModalReserva(hora) {
-                if (!selectedCamaronera || !selectedFecha || !selectedPrograma) {
-                    toastr.error('Seleccione todos los datos requeridos');
-                    return;
-                }
-
-                // Obtener nombre de camaronera
-                const camaroneraNombre = $('#camaroneraSelect option:selected').text();
-
-                // Llenar datos en el modal
-                $('#modalCamaronera').val(camaroneraNombre);
-                $('#modalPrograma').val('Programa #' + selectedPrograma.numero);
-                $('#modalFecha').val(formatFecha(selectedFecha));
-                $('#modalHora').val(hora);
-                $('#modalKilos').val('');
-                $('#modalObservaciones').val('');
-
-                // Mostrar modal
-                $('#reservaModal').modal('show');
-            }
-
-            // Evento para guardar reserva
-            $('#btnGuardarReserva').click(function () {
-                guardarReserva();
-            });
-
-            // Función para guardar reserva
-            function guardarReserva() {
-                const kilos = $('#modalKilos').val();
-                const observaciones = $('#modalObservaciones').val();
-                const hora = $('#modalHora').val();
-
-                // Validación básica
-                if (!kilos || kilos < 1) {
-                    toastr.error('Ingrese una cantidad válida de kilos');
-                    return;
-                }
-
-                // Crear objeto con datos de reserva
-                const reservaData = {
-                    camaCod: selectedCamaronera,
-                    pescNo: selectedPrograma.numero,
-                    fecha: selectedFecha,
-                    hora: hora,
-                    kilos: kilos,
-                    observaciones: observaciones,
-                    usuario: '01005' // Usuario logueado
-                };
-
-                // Mostrar loading
-                toastr.info('Procesando reserva...');
-
-                // Enviar datos al servidor
-                $.ajax({
-                    url: '../../controllers/ReservaController.php?action=guardarReserva',
-                    type: 'POST',
-                    dataType: 'json',
-                    data: reservaData,
-                    success: function (response) {
-                        if (response.success) {
-                            toastr.success('Reserva guardada exitosamente');
-                            $('#reservaModal').modal('hide');
-
-                            // Recargar horarios y reservas
-                            cargarHorariosYReservas();
-                        } else {
-                            toastr.error(response.message || 'Error al guardar la reserva');
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error("Error al guardar reserva:", error);
-                        toastr.error('Error al guardar la reserva. Ver consola para detalles.');
-                    }
+                // Evento para el formulario de reserva
+                $('#formReserva').submit(function (e) {
+                    e.preventDefault();
+                    guardarReserva(pescNo);
                 });
             }
 
@@ -690,9 +457,67 @@ if (!isset($_SESSION['user'])) {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 };
                 return fecha.toLocaleDateString('es-ES', options);
+            }
+
+            // Función para guardar reserva
+            function guardarReserva(pescNo) {
+                const cantidad = $('#cantidadReserva').val();
+                const observaciones = $('#observaciones').val();
+
+                // Validación básica
+                if (!cantidad || cantidad < 1) {
+                    toastr.error('Ingrese una cantidad válida');
+                    return;
+                }
+
+                // Simulación de envío
+                toastr.info('Procesando reserva...');
+
+                setTimeout(function () {
+                    toastr.success(`Reserva para el programa ${pescNo} guardada exitosamente`);
+
+                    // Mostrar resumen
+                    $('#detalleReserva').html(`
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-check-circle mr-2"></i>Reserva Confirmada</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-success">
+                                <h5><i class="icon fas fa-check"></i> ¡Reserva registrada correctamente!</h5>
+                                Su reserva para el programa #${pescNo} ha sido procesada.
+                            </div>
+                            <div class="callout callout-info">
+                                <h5>Detalles de la Reserva</h5>
+                                <dl class="row">
+                                    <dt class="col-sm-4">Programa:</dt>
+                                    <dd class="col-sm-8">#${pescNo}</dd>
+                                    
+                                    <dt class="col-sm-4">Camaronera:</dt>
+                                    <dd class="col-sm-8">${$('#camaroneraSelect option:selected').text()}</dd>
+                                    
+                                    <dt class="col-sm-4">Fecha:</dt>
+                                    <dd class="col-sm-8">${formatFecha($('#fechaReserva').val())}</dd>
+                                    
+                                    <dt class="col-sm-4">Cantidad:</dt>
+                                    <dd class="col-sm-8">${cantidad} unidades</dd>
+                                    
+                                    <dt class="col-sm-4">Observaciones:</dt>
+                                    <dd class="col-sm-8">${observaciones || 'Ninguna'}</dd>
+                                </dl>
+                            </div>
+                            <button class="btn btn-default" onclick="location.reload()">
+                                <i class="fas fa-plus-circle mr-2"></i>Nueva Reserva
+                            </button>
+                        </div>
+                    </div>
+                `);
+                }, 1500);
             }
         });
     </script>
