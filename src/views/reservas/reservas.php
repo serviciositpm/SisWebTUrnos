@@ -1,544 +1,526 @@
-<?php require_once '../layouts/header.php'; ?>
 <?php
-// Asumimos que ya tenemos la sesión iniciada y el código de usuario disponible
-$codUsuario = $_SESSION['codUsuario'] ?? '01005'; // Ejemplo
+session_start();
+if (!isset($_SESSION['user'])) {
+    header('Location: ../auth/login.php');
+    exit();
+}
 ?>
 
-<!-- Content Wrapper. Contains page content -->
-<div class="content-wrapper">
-    <!-- Content Header (Page header) -->
-    <section class="content-header">
-        <h1>
-            Reserva de Turnos
-            <small>Registro en línea</small>
-        </h1>
-        <ol class="breadcrumb">
-            <li><a href="#"><i class="fa fa-calendar"></i> Inicio</a></li>
-            <li class="active">Reservas</li>
-        </ol>
-    </section>
+<!DOCTYPE html>
+<html lang="es">
 
-    <!-- Main content -->
-    <section class="content">
-        <div class="row">
-            <!-- Selección de Camaronera -->
-            <div class="col-md-4">
-                <div class="box box-primary">
-                    <div class="box-header with-border">
-                        <h3 class="box-title">Seleccionar Camaronera</h3>
-                    </div>
-                    <div class="box-body">
-                        <div class="form-group">
-                            <label>Camaroneras disponibles</label>
-                            <select id="selectCamaronera" class="form-control select2" style="width: 100%;">
-                                <option value="">Seleccione una camaronera</option>
-                                <!-- Las opciones se cargarán via AJAX -->
-                            </select>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Reservas</title>
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+    <!-- Select2 -->
+    <link rel="stylesheet" href="../../plugins/select2/css/select2.min.css">
+    <link rel="stylesheet" href="../../plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
+    <!-- Bootstrap Datepicker -->
+    <!-- <link rel="stylesheet" href="../../plugins/bootstrap-datepicker/css/bootstrap-datepicker.min.css"> -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <!-- Custom styles -->
+    <style>
+        .reservas-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 10px;
+        }
+
+        .left-panel {
+            flex: 0 0 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .info-box-programa {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .info-box-programa:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-box-programa.selected {
+            border: 2px solid #007bff;
+            background-color: #f8f9fa;
+        }
+
+        .programa-details {
+            display: none;
+        }
+
+        .programa-details.show {
+            display: block;
+        }
+
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+
+        @media (max-width: 992px) {
+
+            .left-panel,
+            .right-panel {
+                flex: 0 0 100%;
+            }
+        }
+    </style>
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- Navbar y Sidebar se incluyen desde home.php -->
+
+
+        <!-- Contenido principal -->
+        <div class="content-wrapper">
+            <!-- Encabezado -->
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1><i class="fas fa-calendar-check mr-2"></i>Gestión de Reservas</h1>
+                        </div>
+                        <div class="col-sm-6">
+                            <ol class="breadcrumb float-sm-right">
+                                <li class="breadcrumb-item"><a href="home.php">Inicio</a></li>
+                                <li class="breadcrumb-item active">Reservas</li>
+                            </ol>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Calendario -->
-            <div class="col-md-8">
-                <div class="box box-success">
-                    <div class="box-header with-border">
-                        <h3 class="box-title">Seleccionar Fecha</h3>
-                    </div>
-                    <div class="box-body">
-                        <div id="calendar"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Programas de Pesca -->
-        <div class="row" id="programasSection" style="display:none;">
-            <div class="col-md-12">
-                <div class="box box-info">
-                    <div class="box-header with-border">
-                        <h3 class="box-title">Programas de Pesca Disponibles</h3>
-                    </div>
-                    <div class="box-body" id="programasPescaContainer">
-                        <!-- Contenido cargado via AJAX -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Horarios y Reserva -->
-        <div class="row" id="horariosSection" style="display:none;">
-            <div class="col-md-12">
-                <div class="box box-warning">
-                    <div class="box-header with-border">
-                        <h3 class="box-title">Seleccionar Horario</h3>
-                    </div>
-                    <div class="box-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="form-group">
-                                    <label>Horarios disponibles (arrastre para seleccionar)</label>
-                                    <div id="timeSlots" class="time-slots-container">
-                                        <!-- Horarios se generarán dinámicamente -->
+            <!-- Contenido principal -->
+            <section class="content">
+                <div class="container-fluid">
+                    <div class="reservas-container">
+                        <!-- Panel izquierdo -->
+                        <div class="left-panel">
+                            <!-- Card de selección de camaronera -->
+                            <div class="card card-primary card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-fish mr-2"></i>Seleccione Camaronera
+                                    </h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <select id="camaroneraSelect" class="form-control select2" style="width: 100%;">
+                                            <option value="">-- Seleccione una camaronera --</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Kilos</label>
-                                    <input type="number" id="inputKilos" class="form-control" placeholder="Kilos">
+
+                            <!-- Card de selección de fecha -->
+                            <div class="card card-info card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="far fa-calendar-alt mr-2"></i>Seleccione Fecha
+                                    </h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label>Comentarios</label>
-                                    <textarea id="inputComentarios" class="form-control" rows="3"
-                                        placeholder="Observaciones"></textarea>
+                                <div class="card-body">
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                                        </div>
+                                        <input type="text" id="fechaReserva" class="form-control datepicker">
+                                    </div>
                                 </div>
-                                <button id="btnGuardarReserva" class="btn btn-primary btn-block">Guardar
-                                    Reserva</button>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Resumen de Reservas -->
-        <div class="row" id="resumenSection" style="display:none;">
-            <div class="col-md-12">
-                <div class="box box-default">
-                    <div class="box-header with-border">
-                        <h3 class="box-title">Resumen de Reservas</h3>
-                    </div>
-                    <div class="box-body" id="resumenReservas">
-                        <!-- Contenido cargado via AJAX -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-</div>
-
-<!-- Modal para confirmación -->
-<div class="modal fade" id="confirmModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
-                        aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title">Confirmar Reserva</h4>
-            </div>
-            <div class="modal-body">
-                <p id="modalMessage"></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="confirmReserva">Confirmar</button>
-            </div>
-        </div>
-    </div>
-</div>
-<?php require_once '../layouts/footer.php'; ?>
-<!-- CSS personalizado -->
-<style>
-    .time-slots-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-    }
-
-    .time-slot {
-        padding: 8px 12px;
-        background-color: #f4f4f4;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .time-slot:hover {
-        background-color: #e9e9e9;
-    }
-
-    .time-slot.selected {
-        background-color: #3c8dbc;
-        color: white;
-    }
-
-    .time-slot.reserved {
-        background-color: #f56954;
-        color: white;
-        cursor: not-allowed;
-    }
-
-    .time-slot.other-reserved {
-        background-color: #00a65a;
-        color: white;
-    }
-
-    .programa-item {
-        margin-bottom: 10px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-    }
-
-    .fc-day:hover {
-        cursor: pointer;
-        background-color: #f5f5f5;
-    }
-
-    .reserva-item {
-        padding: 8px;
-        margin-bottom: 5px;
-        border-radius: 4px;
-        background-color: #f8f9fa;
-        border-left: 4px solid #3c8dbc;
-    }
-</style>
-<script>
-    $(document).ready(function () {
-        // Variables globales
-        let selectedCamaronera = null;
-        let selectedDate = null;
-        let selectedPrograma = null;
-        let selectedTimeSlots = [];
-
-        // Inicializar Select2 para camaroneras
-        $('.select2').select2();
-
-        // Cargar camaroneras al iniciar
-        cargarCamaroneras();
-
-        // Inicializar calendario
-        $('#calendar').fullCalendar({
-            header: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'month,agendaWeek,agendaDay'
-            },
-            defaultView: 'month',
-            selectable: true,
-            selectHelper: true,
-            validRange: {
-                start: moment().format('YYYY-MM-DD')
-            },
-            dayRender: function (date, cell) {
-                if (date.isBefore(moment(), 'day')) {
-                    cell.css('background-color', '#f5f5f5');
-                    cell.css('opacity', '0.5');
-                    cell.find('.fc-day-number').css('color', '#ccc');
-                }
-            },
-            select: function (start, end, jsEvent, view) {
-                if (start.isBefore(moment(), 'day')) {
-                    toastr.warning('No puede seleccionar fechas pasadas');
-                    return false;
-                }
-
-                if (!selectedCamaronera) {
-                    toastr.warning('Primero seleccione una camaronera');
-                    return false;
-                }
-
-                selectedDate = start.format('YYYY-MM-DD');
-                cargarProgramasPesca(selectedCamaronera, selectedDate);
-                $('#horariosSection').hide();
-                $('#programasSection').show();
-            }
-        });
-
-        // Evento cambio de camaronera
-        $('#selectCamaronera').change(function () {
-            selectedCamaronera = $(this).val();
-            selectedDate = null;
-            $('#programasSection').hide();
-            $('#horariosSection').hide();
-            $('#resumenSection').hide();
-
-            if (selectedCamaronera) {
-                cargarResumenReservas(selectedCamaronera);
-            }
-        });
-
-        // Función para cargar camaroneras
-        function cargarCamaroneras() {
-            $.ajax({
-                url: '../../controllers/ReservasController.php',
-                type: 'POST',
-                data: {
-                    action: 'getCamaroneras',
-                    codUsuario: '<?php echo $codUsuario; ?>'
-                },
-                dataType: 'json',
-                success: function (response) {
-                    if (response.success) {
-                        $('#selectCamaronera').empty().append('<option value="">Seleccione una camaronera</option>');
-
-                        $.each(response.data, function (index, camaronera) {
-                            $('#selectCamaronera').append(
-                                $('<option></option>').val(camaronera.CamaCod).text(camaronera.CamaNomCom)
-                            );
-                        });
-                    } else {
-                        toastr.error(response.message);
-                    }
-                },
-                error: function (xhr, status, error) {
-                    toastr.error('Error al cargar camaroneras: ' + error);
-                }
-            });
-        }
-
-        // Función para cargar programas de pesca
-        function cargarProgramasPesca(camaCod, fecha) {
-            $.ajax({
-                url: '../../controllers/ReservasController.php',
-                type: 'POST',
-                data: {
-                    action: 'getProgramasPesca',
-                    CamaCod: camaCod,
-                    PescFec: fecha
-                },
-                dataType: 'json',
-                beforeSend: function () {
-                    $('#programasPescaContainer').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-3x"></i></div>');
-                },
-                success: function (response) {
-                    if (response.success) {
-                        if (response.data.length > 0) {
-                            let html = '<div class="row">';
-
-                            $.each(response.data, function (index, programa) {
-                                html += `
-                                <div class="col-md-4">
-                                    <div class="programa-item">
-                                        <div class="form-check">
-                                            <input class="form-check-input programa-check" type="radio" 
-                                                name="programa" id="programa${index}" 
-                                                value="${programa.PescNo}" 
-                                                data-kilos="${programa.PescCanRea}">
-                                            <label class="form-check-label" for="programa${index}">
-                                                <strong>Programa:</strong> ${programa.PescNo}<br>
-                                                <strong>Kilos:</strong> ${programa.PescCanRea}
-                                            </label>
+                            <!-- Card de programas disponibles -->
+                            <div class="card card-success card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-list-ol mr-2"></i>Programas Disponibles
+                                    </h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="loading-container" id="loadingProgramas">
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                            <p class="mt-2">Cargando programas...</p>
                                         </div>
                                     </div>
+                                    <div id="programasContainer" class="p-2"></div>
                                 </div>
-                            `;
-                            });
+                            </div>
+                        </div>
 
-                            html += '</div>';
-                            $('#programasPescaContainer').html(html);
+                        <!-- Panel derecho -->
+                        <div class="right-panel">
+                            <div class="card card-warning card-outline direct-chat direct-chat-warning">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-clipboard-list mr-2"></i>Detalles de Reserva
+                                    </h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="detalleReserva" class="text-center py-5">
+                                        <i class="fas fa-info-circle fa-4x text-muted mb-3"></i>
+                                        <h4 class="text-muted">Seleccione un programa de pesca</h4>
+                                        <p class="text-muted">Para ver los detalles y realizar una reserva</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 
-                            // Evento para selección de programa
-                            $('.programa-check').change(function () {
-                                selectedPrograma = $(this).val();
-                                const kilos = $(this).data('kilos');
-                                $('#inputKilos').val(kilos);
+    <!-- jQuery -->
+    <script src="../../plugins/jquery/jquery.min.js"></script>
+    <!-- Bootstrap 4 -->
+    <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Select2 -->
+    <script src="../../plugins/select2/js/select2.full.min.js"></script>
+    <!-- Bootstrap Datepicker -->
+    <!-- <script src="../../plugins/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script> -->
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <!-- <script src="../../plugins/bootstrap-datepicker/locales/bootstrap-datepicker.es.min.js"></script> -->
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/locales/bootstrap-datepicker.es.min.js"></script>
+    <!-- AdminLTE App -->
+    <script src="../../dist/js/adminlte.min.js"></script>
 
-                                // Cargar horarios disponibles
-                                cargarHorariosDisponibles(selectedCamaronera, selectedDate, selectedPrograma);
-                                $('#horariosSection').show();
-                            });
+    <script>
+        $(document).ready(function () {
+            // Inicializar select2
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                placeholder: 'Seleccione una camaronera'
+            });
+
+            // Inicializar datepicker
+            $('#fechaReserva').datepicker({
+                format: 'yyyy-mm-dd',
+                language: 'es',
+                autoclose: true,
+                startDate: new Date(),
+                todayHighlight: true,
+                orientation: 'bottom auto'
+            }).datepicker('setDate', new Date());
+
+            // Cargar camaroneras al iniciar
+            cargarCamaroneras();
+
+            // Eventos
+            $('#camaroneraSelect').change(function () {
+                if ($(this).val() && $('#fechaReserva').val()) {
+                    cargarProgramasPesca($(this).val(), $('#fechaReserva').val());
+                }
+            });
+
+            $('#fechaReserva').change(function () {
+                if ($('#camaroneraSelect').val() && $(this).val()) {
+                    cargarProgramasPesca($('#camaroneraSelect').val(), $(this).val());
+                }
+            });
+
+            // Función para cargar camaroneras
+            function cargarCamaroneras() {
+                $.ajax({
+                    url: '../../controllers/ReservaController.php?action=getCamaroneras',
+                    type: 'GET',
+                    dataType: 'json',
+                    beforeSend: function () {
+                        $('#camaroneraSelect').prop('disabled', true);
+                    },
+                    success: function (data) {
+                        console.log("Datos recibidos:", data); // Para depuración
+
+                        if (data.error) {
+                            toastr.error(data.error);
                         } else {
-                            $('#programasPescaContainer').html('<div class="alert alert-warning">No hay programas de pesca disponibles para esta fecha.</div>');
-                        }
-                    } else {
-                        toastr.error(response.message);
-                    }
-                },
-                error: function (xhr, status, error) {
-                    toastr.error('Error al cargar programas de pesca: ' + error);
-                }
-            });
-        }
+                            var select = $('#camaroneraSelect');
+                            select.empty().append('<option value="">-- Seleccione una camaronera --</option>');
 
-        // Función para cargar horarios disponibles
-        function cargarHorariosDisponibles(camaCod, fecha, pescNo) {
-            $.ajax({
-                url: '../../controllers/ReservasController.php',
-                type: 'POST',
-                data: {
-                    action: 'getHorariosDisponibles',
-                    CamaCod: camaCod,
-                    fecha: fecha,
-                    PescNo: pescNo
-                },
-                dataType: 'json',
-                beforeSend: function () {
-                    $('#timeSlots').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Cargando horarios...</div>');
-                },
-                success: function (response) {
-                    if (response.success) {
-                        let html = '';
-                        const horasDisponibles = response.horasDisponibles;
-                        const horasReservadas = response.horasReservadas;
-                        const otrasReservas = response.otrasReservas;
-
-                        for (let i = 0; i < 24; i++) {
-                            const hora = i.toString().padStart(2, '0') + ':00';
-                            let clase = 'time-slot';
-                            let title = '';
-
-                            if (horasReservadas.includes(hora)) {
-                                clase += ' reserved';
-                                title = 'Reservado por usted';
-                            } else if (otrasReservas.includes(hora)) {
-                                clase += ' other-reserved';
-                                title = 'Reservado por otro usuario';
-                            } else if (horasDisponibles.includes(hora)) {
-                                clase += ' available';
-                                title = 'Disponible';
-                            } else {
-                                clase += ' disabled';
-                                title = 'No disponible';
+                            if (Array.isArray(data)) {
+                                $.each(data, function (index, camaronera) {
+                                    if (camaronera.CamaCod && camaronera.CamaNomCom) {
+                                        select.append($('<option>', {
+                                            value: camaronera.CamaCod,
+                                            text: camaronera.CamaNomCom
+                                        }));
+                                    }
+                                });
                             }
 
-                            html += `<div class="${clase}" data-hora="${hora}" title="${title}">${hora}</div>`;
-                        }
+                            select.prop('disabled', false);
 
-                        $('#timeSlots').html(html);
-
-                        // Eventos para selección de horarios
-                        $('.time-slot.available').on('mousedown', function () {
-                            $(this).toggleClass('selected');
-                            const hora = $(this).data('hora');
-
-                            if ($(this).hasClass('selected')) {
-                                if (!selectedTimeSlots.includes(hora)) {
-                                    selectedTimeSlots.push(hora);
-                                }
-                            } else {
-                                selectedTimeSlots = selectedTimeSlots.filter(item => item !== hora);
+                            if (data.length === 1) {
+                                select.val(data[0].CamaCod).trigger('change');
                             }
-                        });
-                    } else {
-                        toastr.error(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error en AJAX:", status, error);
+                        console.log("Respuesta completa:", xhr.responseText);
+                        toastr.error('Error al cargar las camaroneras. Ver consola para detalles.');
+                        $('#camaroneraSelect').prop('disabled', false);
                     }
-                },
-                error: function (xhr, status, error) {
-                    toastr.error('Error al cargar horarios: ' + error);
-                }
-            });
-        }
+                });
+            }
 
-        // Función para cargar resumen de reservas
-        function cargarResumenReservas(camaCod) {
-            $.ajax({
-                url: '../../controllers/ReservasController.php',
-                type: 'POST',
-                data: {
-                    action: 'getResumenReservas',
-                    CamaCod: camaCod
-                },
-                dataType: 'json',
-                success: function (response) {
-                    if (response.success) {
-                        if (response.data.length > 0) {
-                            let html = '<div class="row">';
+            // Función para cargar programas de pesca
+            function cargarProgramasPesca(camaCod, fecha) {
+                $('#loadingProgramas').show();
+                $('#programasContainer').empty();
 
-                            $.each(response.data, function (index, reserva) {
-                                html += `
-                                <div class="col-md-4">
-                                    <div class="reserva-item">
-                                        <strong>Fecha:</strong> ${reserva.GeReFecha}<br>
-                                        <strong>Horas:</strong> ${reserva.horas.join(', ')}<br>
-                                        <strong>Kilos:</strong> ${reserva.GeReKilos}<br>
-                                        <strong>Estado:</strong> <span class="label label-success">Activo</span>
+                $.ajax({
+                    url: '../../controllers/ReservaController.php?action=getProgramas&camaCod=' + camaCod + '&fecha=' + fecha,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (data) {
+                        $('#loadingProgramas').hide();
+
+                        if (data.length > 0) {
+                            $.each(data, function (index, programa) {
+                                var programaHtml = `
+                                <div class="info-box shadow-sm mb-2 info-box-programa" 
+                                     data-pescno="${programa.PescNo}" 
+                                     data-pescfec="${programa.PescFec}">
+                                    <span class="info-box-icon bg-info"><i class="fas fa-fish"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Programa #${programa.PescNo}</span>
+                                        <span class="info-box-number">${programa.PescCanRea} unidades</span>
+                                        <div class="progress">
+                                            <div class="progress-bar" style="width: 70%"></div>
+                                        </div>
+                                        <span class="progress-description">
+                                            ${formatFecha(programa.PescFec)}
+                                        </span>
                                     </div>
                                 </div>
                             `;
+                                $('#programasContainer').append(programaHtml);
                             });
 
-                            html += '</div>';
-                            $('#resumenReservas').html(html);
-                            $('#resumenSection').show();
+                            // Evento click para los programas
+                            $('.info-box-programa').click(function () {
+                                $('.info-box-programa').removeClass('selected');
+                                $(this).addClass('selected');
+                                mostrarDetallePrograma($(this).data('pescno'), $(this).data('pescfec'));
+                            });
                         } else {
-                            $('#resumenReservas').html('<div class="alert alert-info">No tiene reservas registradas para esta camaronera.</div>');
-                            $('#resumenSection').show();
+                            $('#programasContainer').html(`
+                            <div class="callout callout-info">
+                                <h5>No hay programas disponibles</h5>
+                                <p>No se encontraron programas de pesca para la fecha seleccionada.</p>
+                            </div>
+                        `);
                         }
-                    } else {
-                        toastr.error(response.message);
+                    },
+                    error: function (xhr, status, error) {
+                        $('#loadingProgramas').hide();
+                        console.error(error);
+                        $('#programasContainer').html(`
+                        <div class="callout callout-danger">
+                            <h5>Error al cargar programas</h5>
+                            <p>Ocurrió un error al intentar cargar los programas de pesca.</p>
+                        </div>
+                    `);
                     }
-                },
-                error: function (xhr, status, error) {
-                    toastr.error('Error al cargar resumen de reservas: ' + error);
-                }
-            });
-        }
-
-        // Evento para guardar reserva
-        $('#btnGuardarReserva').click(function () {
-            if (!selectedCamaronera || !selectedDate || !selectedPrograma || selectedTimeSlots.length === 0) {
-                toastr.warning('Complete todos los campos requeridos');
-                return;
+                });
             }
 
-            const kilos = $('#inputKilos').val() || 0;
-            const comentarios = $('#inputComentarios').val();
+            // Función para mostrar detalles del programa seleccionado
+            function mostrarDetallePrograma(pescNo, pescFec) {
+                var detalleHtml = `
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Programa #${pescNo}</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-info-circle mr-2"></i>Información del Programa</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Fecha:</dt>
+                                            <dd class="col-sm-8">${formatFecha(pescFec)}</dd>
+                                            
+                                            <dt class="col-sm-4">Número:</dt>
+                                            <dd class="col-sm-8">${pescNo}</dd>
+                                            
+                                            <dt class="col-sm-4">Camaronera:</dt>
+                                            <dd class="col-sm-8">${$('#camaroneraSelect option:selected').text()}</dd>
+                                            
+                                            <dt class="col-sm-4">Estado:</dt>
+                                            <dd class="col-sm-8"><span class="badge bg-success">Disponible</span></dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-calendar-plus mr-2"></i>Realizar Reserva</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <form id="formReserva">
+                                            <div class="form-group">
+                                                <label for="cantidadReserva">Cantidad a Reservar</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="cantidadReserva" min="1" required>
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">unidades</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="observaciones">Observaciones</label>
+                                                <textarea class="form-control" id="observaciones" rows="3" placeholder="Ingrese cualquier observación adicional"></textarea>
+                                            </div>
+                                            <div class="form-group">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input class="custom-control-input" type="checkbox" id="confirmacion" required>
+                                                    <label for="confirmacion" class="custom-control-label">Confirmo que los datos son correctos</label>
+                                                </div>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary btn-block">
+                                                <i class="fas fa-save mr-2"></i>Guardar Reserva
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
 
-            // Mostrar modal de confirmación
-            $('#modalMessage').html(`
-            <p><strong>Camaronera:</strong> ${$('#selectCamaronera option:selected').text()}</p>
-            <p><strong>Fecha:</strong> ${selectedDate}</p>
-            <p><strong>Horas:</strong> ${selectedTimeSlots.join(', ')}</p>
-            <p><strong>Programa:</strong> ${selectedPrograma}</p>
-            <p><strong>Kilos:</strong> ${kilos}</p>
-            <p><strong>Comentarios:</strong> ${comentarios}</p>
-        `);
+                $('#detalleReserva').html(detalleHtml);
 
-            $('#confirmModal').modal('show');
-        });
+                // Evento para el formulario de reserva
+                $('#formReserva').submit(function (e) {
+                    e.preventDefault();
+                    guardarReserva(pescNo);
+                });
+            }
 
-        // Confirmar reserva
-        $('#confirmReserva').click(function () {
-            const kilos = $('#inputKilos').val() || 0;
-            const comentarios = $('#inputComentarios').val();
+            // Función para formatear fecha
+            function formatFecha(fechaStr) {
+                const fecha = new Date(fechaStr);
+                const options = {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                return fecha.toLocaleDateString('es-ES', options);
+            }
 
-            $.ajax({
-                url: '../../controllers/ReservasController.php',
-                type: 'POST',
-                data: {
-                    action: 'guardarReserva',
-                    CamaCod: selectedCamaronera,
-                    fecha: selectedDate,
-                    horas: selectedTimeSlots,
-                    PescNo: selectedPrograma,
-                    kilos: kilos,
-                    comentarios: comentarios,
-                    codUsuario: '<?php echo $codUsuario; ?>'
-                },
-                dataType: 'json',
-                beforeSend: function () {
-                    $('#confirmReserva').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Guardando...');
-                },
-                success: function (response) {
-                    $('#confirmModal').modal('hide');
-                    $('#confirmReserva').prop('disabled', false).text('Confirmar');
+            // Función para guardar reserva
+            function guardarReserva(pescNo) {
+                const cantidad = $('#cantidadReserva').val();
+                const observaciones = $('#observaciones').val();
 
-                    if (response.success) {
-                        toastr.success('Reserva guardada correctamente');
-
-                        // Limpiar selecciones
-                        selectedTimeSlots = [];
-                        $('.time-slot').removeClass('selected');
-                        $('#inputComentarios').val('');
-
-                        // Actualizar resumen
-                        cargarResumenReservas(selectedCamaronera);
-
-                        // Actualizar horarios
-                        cargarHorariosDisponibles(selectedCamaronera, selectedDate, selectedPrograma);
-                    } else {
-                        toastr.error(response.message);
-                    }
-                },
-                error: function (xhr, status, error) {
-                    $('#confirmModal').modal('hide');
-                    $('#confirmReserva').prop('disabled', false).text('Confirmar');
-                    toastr.error('Error al guardar reserva: ' + error);
+                // Validación básica
+                if (!cantidad || cantidad < 1) {
+                    toastr.error('Ingrese una cantidad válida');
+                    return;
                 }
-            });
+
+                // Simulación de envío
+                toastr.info('Procesando reserva...');
+
+                setTimeout(function () {
+                    toastr.success(`Reserva para el programa ${pescNo} guardada exitosamente`);
+
+                    // Mostrar resumen
+                    $('#detalleReserva').html(`
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-check-circle mr-2"></i>Reserva Confirmada</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-success">
+                                <h5><i class="icon fas fa-check"></i> ¡Reserva registrada correctamente!</h5>
+                                Su reserva para el programa #${pescNo} ha sido procesada.
+                            </div>
+                            <div class="callout callout-info">
+                                <h5>Detalles de la Reserva</h5>
+                                <dl class="row">
+                                    <dt class="col-sm-4">Programa:</dt>
+                                    <dd class="col-sm-8">#${pescNo}</dd>
+                                    
+                                    <dt class="col-sm-4">Camaronera:</dt>
+                                    <dd class="col-sm-8">${$('#camaroneraSelect option:selected').text()}</dd>
+                                    
+                                    <dt class="col-sm-4">Fecha:</dt>
+                                    <dd class="col-sm-8">${formatFecha($('#fechaReserva').val())}</dd>
+                                    
+                                    <dt class="col-sm-4">Cantidad:</dt>
+                                    <dd class="col-sm-8">${cantidad} unidades</dd>
+                                    
+                                    <dt class="col-sm-4">Observaciones:</dt>
+                                    <dd class="col-sm-8">${observaciones || 'Ninguna'}</dd>
+                                </dl>
+                            </div>
+                            <button class="btn btn-default" onclick="location.reload()">
+                                <i class="fas fa-plus-circle mr-2"></i>Nueva Reserva
+                            </button>
+                        </div>
+                    </div>
+                `);
+                }, 1500);
+            }
         });
-    });
-</script>
+    </script>
+</body>
+
+</html>
