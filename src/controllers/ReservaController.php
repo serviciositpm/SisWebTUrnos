@@ -122,12 +122,13 @@ class ReservaController
     public function getReservasExistentes() {
         try {
             $fecha = $_GET['fecha'] ?? null;
-
+            
             if (!$fecha) {
                 throw new Exception("El parámetro fecha es requerido");
             }
 
             $reservas = $this->model->obtenerReservasPorFiltros($fecha);
+            
             echo json_encode($reservas);
         } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
@@ -179,6 +180,64 @@ class ReservaController
                 'success' => false,
                 'message' => $e->getMessage()
             ]);
+        }
+    }
+    public function editarReserva() {
+        header('Content-Type: application/json');
+        
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+            
+            // Validar acceso a la camaronera
+            $reservaActual = $this->model->obtenerReservaPorId($data['reservaId']);
+            
+            if ($reservaActual['CamaCod'] !== $data['camaCod']) {
+                throw new Exception("No tienes permiso para editar reservas de esta camaronera");
+            }
+            
+            // Validar datos
+            if (empty($data['reservaId'])) throw new Exception("ID de reserva no proporcionado");
+            if (empty($data['camaCod'])) throw new Exception("Camaronera no proporcionada");
+            if (empty($data['pescNo'])) throw new Exception("Programa no proporcionado");
+            if (empty($data['fecha'])) throw new Exception("Fecha no proporcionada");
+            if (empty($data['hora'])) throw new Exception("Hora no proporcionada");
+            if (empty($data['kilos']) || $data['kilos'] <= 0) throw new Exception("Kilos no válidos");
+            
+            // Actualizar reserva
+            $result = $this->model->editarReserva(
+                $data['reservaId'],
+                $data['camaCod'],
+                $data['pescNo'],
+                $data['fecha'],
+                $data['hora'],
+                $data['kilos'],
+                $data['observaciones'],
+                $data['usuario']
+            );
+            
+            if ($result) {
+                echo json_encode(['success' => true, 'message' => 'Reserva actualizada correctamente']);
+            } else {
+                throw new Exception("Error al actualizar la reserva");
+            }
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+    
+    public function obtenerReservaPorId($id) {
+        try {
+            $reserva = $this->model->obtenerReservaPorId($id);
+            
+            if ($reserva) {
+                return $reserva;
+            } else {
+                throw new Exception("Reserva no encontrada");
+            }
+        } catch (Exception $e) {
+            error_log("Error en obtenerReservaPorId: " . $e->getMessage());
+            return null;
         }
     }
 }

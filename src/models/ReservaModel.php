@@ -67,14 +67,17 @@ class ReservaModel
     }
     public function obtenerReservasPorFiltros($fecha) {
         $query = "SELECT 
+                    c.GeReCodigo,
+                    c.GeReFecha,
                     d.GeReHora, 
                     d.GeReKilos, 
                     d.GeReObservaciones,
                     d.CamaCod,
-                    d.GeRePescNo
+                    d.GeRePescNo,
+                    d.GeReEstadoDet
                 FROM GetReservasDet d
                 INNER JOIN GetReservasCab c ON d.GeReCodigo = c.GeReCodigo
-                WHERE CONVERT(DATE, d.GeReHora) = ?
+                WHERE CONVERT(DATE, c.GeReFecha) = ?
                 AND d.GeReEstadoDet = 'A'
                 ORDER BY d.GeReHora";
 
@@ -82,13 +85,23 @@ class ReservaModel
         $stmt = sqlsrv_query($this->db, $query, $params);
 
         if ($stmt === false) {
-            throw new Exception("Error en la consulta: " . print_r(sqlsrv_errors(), true));
+            $errors = sqlsrv_errors();
+            error_log("Error en la consulta SQL: " . print_r($errors, true));
+            throw new Exception("Error al obtener reservas. Detalles en el log.");
         }
 
         $result = array();
         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            // Convertir objetos DateTime a strings si es necesario
+            if ($row['GeReFecha'] instanceof DateTime) {
+                $row['GeReFecha'] = $row['GeReFecha']->format('Y-m-d');
+            }
+            if ($row['GeReHora'] instanceof DateTime) {
+                $row['GeReHora'] = $row['GeReHora']->format('H:i:s');
+            }
             $result[] = $row;
         }
+        
         sqlsrv_free_stmt($stmt);
         return $result;
     }
@@ -238,6 +251,59 @@ class ReservaModel
         $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
         sqlsrv_free_stmt($stmt);
         return $result['siguiente'];
+    }
+    public function editarReserva($id, $camaCod, $pescNo, $fecha, $hora, $kilos, $observaciones, $usuario) {
+        try {
+            $sql = "UPDATE GesReserva SET 
+                    CamaCod = ?, 
+                    GeRePescNo = ?, 
+                    GeReFecha = ?, 
+                    GeReHora = ?, 
+                    GeReKilos = ?, 
+                    GeReObservaciones = ?, 
+                    GeReUsuMod = ?, 
+                    GeReFecMod = GETDATE()
+                    WHERE GeReCodigo = ?";
+            
+            $params = array($camaCod, $pescNo, $fecha, $hora, $kilos, $observaciones, $usuario, $id);
+            $stmt = sqlsrv_query($this->db, $sql, $params);
+            
+            if ($stmt === false) {
+                error_log("Error en editarReserva: " . print_r(sqlsrv_errors(), true));
+                return false;
+            }
+            
+            $rowsAffected = sqlsrv_rows_affected($stmt);
+            sqlsrv_free_stmt($stmt);
+            return $rowsAffected > 0;
+        } catch (Exception $e) {
+            error_log("Error en editarReserva: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    public function obtenerReservaPorId($id) {
+        try {
+            $sql = "SELECT r.*, c.CamaNomCom 
+                    FROM GesReserva r
+                    LEFT JOIN Camaroneras c ON r.CamaCod = c.CamaCod
+                    WHERE r.GeReCodigo = ?";
+            
+            $params = array($id);
+            $stmt = sqlsrv_query($this->db, $sql, $params);
+
+            if ($stmt === false) {
+                error_log("Error en obtenerReservaPorId: " . print_r(sqlsrv_errors(), true));
+                return null;
+            }
+
+            $result = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+            sqlsrv_free_stmt($stmt);
+            return $result;
+        } catch (Exception $e) {
+            error_log("Error en obtenerReservaPorId: " . $e->getMessage());
+            return null;
+        }
     }
 }
 ?>

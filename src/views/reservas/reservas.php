@@ -103,16 +103,22 @@ if (!isset($_SESSION['user'])) {
         }
 
         .reservation-item {
-            display: inline-block;
-            margin-right: 5px;
+            display: block;
             margin-bottom: 5px;
             padding: 5px 8px;
             border-radius: 4px;
             font-size: 0.85rem;
             color: white;
-            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-
+        .reservation-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
         .reservation-item:hover::after {
             content: attr(data-tooltip);
             position: absolute;
@@ -127,7 +133,30 @@ if (!isset($_SESSION['user'])) {
             white-space: nowrap;
             z-index: 100;
         }
+        /* Colores adicionales para más variedad */
+        .bg-purple {
+            background-color: #6f42c1 !important;
+        }
 
+        .bg-pink {
+            background-color: #e83e8c !important;
+        }
+
+        .bg-indigo {
+            background-color: #6610f2 !important;
+        }
+
+        .bg-teal {
+            background-color: #20c997 !important;
+        }
+
+        .bg-orange {
+            background-color: #fd7e14 !important;
+        }
+
+        .bg-cyan {
+            background-color: #17a2b8 !important;
+        }
         @media (max-width: 992px) {
 
             .left-panel,
@@ -276,6 +305,7 @@ if (!isset($_SESSION['user'])) {
                 </div>
                 <div class="modal-body">
                     <form id="formReserva">
+                        <input type="hidden" id="modalReservaId">
                         <div class="form-group">
                             <label>Camaronera:</label>
                             <input type="text" class="form-control" id="modalCamaronera" readonly>
@@ -326,17 +356,73 @@ if (!isset($_SESSION['user'])) {
     <script src="../../dist/js/adminlte.min.js"></script>
 
     <script>
+        // Función para seleccionar una reserva
+        function seleccionarReserva(element) {
+            event.stopPropagation();
+            reservaSeleccionada = JSON.parse($(element).data('reserva'));
+            
+            // Verificar si la reserva pertenece a la camaronera seleccionada
+            if (reservaSeleccionada.CamaCod === selectedCamaronera) {
+                abrirModalEdicion(reservaSeleccionada);
+            } else {
+                toastr.warning(`
+                    No puedes editar esta reserva porque pertenece a otra camaronera.<br>
+                    Camaronera de la reserva: ${reservaSeleccionada.CamaCod}<br>
+                    Camaronera seleccionada: ${selectedCamaronera}
+                `, 'Acceso denegado', {timeOut: 5000, preventDuplicates: true});
+            }
+        }
         $(document).ready(function () {
             // Variables globales
             let selectedPrograma = null;
             let selectedCamaronera = null;
             let selectedFecha = null;
             let reservasExistentes = [];
+            let reservaSeleccionada = null;
+            // En lugar de usar onclick en el HTML, usa esto:
+            $(document).on('click', '.reservation-item', function(e) {
+                e.stopPropagation();
+                try {
+                    // Obtener los datos como string primero
+                    const reservaStr = $(this).data('reserva');
+                    console.log("Datos crudos:", reservaStr); // Para depuración
+                    
+                    // Parsear el JSON
+                    const reserva = {
+                        GeReCodigo: $(this).data('codigo'),
+                        CamaCod: $(this).data('camaronera'),
+                        GeRePescNo: $(this).data('programa'),
+                        GeReFecha: $(this).data('fecha'),
+                        GeReHora: $(this).data('hora'),
+                        GeReKilos: $(this).data('kilos'),
+                        GeReObservaciones: $(this).data('observaciones')
+                    };
+                    
+                    if (!reserva || !reserva.CamaCod) {
+                        throw new Error("Datos de reserva inválidos");
+                    }
+                    
+                    // Verificar camaronera
+                    if (reserva.CamaCod === selectedCamaronera) {
+                        abrirModalEdicion(reserva);
+                    } else {
+                        toastr.error(`
+                            No puedes editar esta reserva porque pertenece a otra camaronera.<br>
+                            Camaronera de la reserva: ${reserva.CamaCod}<br>
+                            Camaronera seleccionada: ${selectedCamaronera}
+                        `, 'Acceso denegado', {timeOut: 5000, preventDuplicates: true});
+                    }
+                } catch (error) {
+                    console.error("Error al procesar reserva:", error);
+                    toastr.error('Error al cargar los datos de la reserva');
+                }
+            });
 
             // Colores para las reservas
             const coloresReservas = [
                 'bg-primary', 'bg-success', 'bg-info', 'bg-warning', 'bg-danger',
-                'bg-secondary', 'bg-purple', 'bg-pink', 'bg-indigo', 'bg-teal'
+                'bg-secondary', 'bg-purple', 'bg-pink', 'bg-indigo', 'bg-teal',
+                'bg-orange', 'bg-cyan', 'bg-dark', 'bg-maroon', 'bg-navy'
             ];
 
             // Inicializar select2
@@ -552,8 +638,8 @@ if (!isset($_SESSION['user'])) {
 
                     // Buscar reservas para esta hora
                     const reservasHora = reservasExistentes.filter(r => {
-                        const fechaHora = new Date(r.GeReHora);
-                        return fechaHora.getHours() === hora;
+                        const horaReserva = r.GeReHora.split(':')[0]; // Extraer solo la hora
+                        return horaReserva === hora.toString().padStart(2, '0');
                     });
 
                     html += `
@@ -571,13 +657,33 @@ if (!isset($_SESSION['user'])) {
                     if (reservasHora.length > 0) {
                         reservasHora.forEach((reserva, index) => {
                             const colorIndex = index % coloresReservas.length;
+                            const tooltipContent = `
+                                Programa: ${reserva.GeRePescNo || 'N/A'}<br>
+                                Kilos: ${reserva.GeReKilos || '0'} kg<br>
+                                Camaronera: ${reserva.CamaCod || 'N/A'}<br>
+                                Observaciones: ${reserva.GeReObservaciones || 'Ninguna'}
+                            `;
+                            
+                            // Escapar las comillas simples en el JSON
+                            const reservaJson = JSON.stringify(reserva).replace(/'/g, "\\'");
+                            
                             html += `
-                                <span class="reservation-item ${coloresReservas[colorIndex]}" 
-                                      data-tooltip="Camaronera: ${reserva.CamaNomCom || 'N/A'}&#10;Kilos: ${reserva.GeReKilos}">
-                                    ${reserva.CamaNomCom || 'Cama.'}: ${reserva.GeReKilos} kg
-                                </span>
+                                <div class="reservation-item ${coloresReservas[colorIndex]}" 
+                                    data-codigo="${reserva.GeReCodigo}"
+                                    data-camaronera="${reserva.CamaCod}"
+                                    data-programa="${reserva.GeRePescNo}"
+                                    data-fecha="${reserva.GeReFecha}"
+                                    data-hora="${reserva.GeReHora}"
+                                    data-kilos="${reserva.GeReKilos}"
+                                    data-observaciones="${reserva.GeReObservaciones || ''}"
+                                    data-toggle="tooltip"
+                                    title="${tooltipContent}">
+                                    ${reserva.GeRePescNo || 'Prog.'}: ${reserva.GeReKilos || '0'} kg
+                                </div>
                             `;
                         });
+                    } else if (horaFormateada === '00:00') {
+                        html += '<small class="text-muted">No hay reservas para esta hora</small>';
                     } else {
                         html += '<small class="text-muted">No hay reservas</small>';
                     }
@@ -592,6 +698,12 @@ if (!isset($_SESSION['user'])) {
                 html += '</div>';
                 $('#horariosContainer').html(html);
 
+                // Inicializar tooltips
+                $('[data-toggle="tooltip"]').tooltip({
+                    placement: 'top',
+                    trigger: 'hover'
+                });
+
                 // Evento para el botón de reservar
                 $('.btn-reservar').click(function (e) {
                     e.stopPropagation();
@@ -605,7 +717,24 @@ if (!isset($_SESSION['user'])) {
                     $(this).addClass('selected');
                 });
             }
+            
 
+            // Función para abrir modal de edición
+            function abrirModalEdicion(reserva) {
+                $('#reservaModal .modal-title').text('Editar Reserva');
+                $('#reservaModal').modal('show');
+                
+                // Llenar datos en el modal
+                $('#modalCamaronera').val(reserva.CamaCod);
+                $('#modalPrograma').val('Programa #' + reserva.GeRePescNo);
+                $('#modalFecha').val(formatFecha(reserva.GeReFecha));
+                $('#modalHora').val(reserva.GeReHora.substring(0, 5));
+                $('#modalKilos').val(reserva.GeReKilos);
+                $('#modalObservaciones').val(reserva.GeReObservaciones);
+                
+                // Cambiar texto del botón
+                $('#btnGuardarReserva').html('<i class="fas fa-save"></i> Actualizar Reserva');
+            }
             // Función para abrir modal de reserva
             function abrirModalReserva(hora) {
                 if (!selectedCamaronera || !selectedFecha || !selectedPrograma) {
@@ -648,41 +777,52 @@ if (!isset($_SESSION['user'])) {
                 // Crear objeto con datos de reserva
                 const reservaData = {
                     camaCod: selectedCamaronera,
-                    pescNo: selectedPrograma.numero,
-                    fecha: selectedFecha,
+                    pescNo: selectedPrograma ? selectedPrograma.numero : reservaSeleccionada.GeRePescNo,
+                    fecha: selectedFecha || reservaSeleccionada.GeReFecha,
                     hora: hora,
                     kilos: kilos,
                     observaciones: observaciones,
                     usuario: '01005' // Usuario logueado
                 };
+                // Si estamos editando, agregar el ID de la reserva
+                if (reservaSeleccionada) {
+                    reservaData.reservaId = reservaSeleccionada.GeReCodigo;
+                }
+                const url = reservaSeleccionada 
+                            ? '../../controllers/ReservaController.php?action=editarReserva' 
+                            : '../../controllers/ReservaController.php?action=guardarReserva';
 
                 // Mostrar loading
                 toastr.info('Procesando reserva...');
 
                 // Enviar datos al servidor
                 $.ajax({
-                    url: '../../controllers/ReservaController.php?action=guardarReserva',
+                    url: url,
                     type: 'POST',
                     dataType: 'json',
                     data: reservaData,
-                    success: function (response) {
+                    success: function(response) {
                         if (response.success) {
-                            toastr.success('Reserva guardada exitosamente');
+                            toastr.success(reservaSeleccionada ? 'Reserva actualizada' : 'Reserva guardada');
                             $('#reservaModal').modal('hide');
-
-                            // Recargar horarios y reservas
+                            reservaSeleccionada = null;
                             cargarHorariosYReservas();
                         } else {
-                            toastr.error(response.message || 'Error al guardar la reserva');
+                            toastr.error(response.message || 'Error al procesar la reserva');
                         }
                     },
-                    error: function (xhr, status, error) {
-                        console.error("Error al guardar reserva:", error);
-                        toastr.error('Error al guardar la reserva. Ver consola para detalles.');
+                    error: function(xhr, status, error) {
+                        console.error("Error:", error);
+                        toastr.error('Error al procesar la reserva. Ver consola para detalles.');
                     }
                 });
             }
-
+            // Modificar el evento de cierre del modal para resetear variables
+            $('#reservaModal').on('hidden.bs.modal', function() {
+                reservaSeleccionada = null;
+                $('#reservaModal .modal-title').text('Registrar Reserva');
+                $('#btnGuardarReserva').html('<i class="fas fa-save"></i> Guardar Reserva');
+            });
             // Función para formatear fecha
             function formatFecha(fechaStr) {
                 const fecha = new Date(fechaStr);
