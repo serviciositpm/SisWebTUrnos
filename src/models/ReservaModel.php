@@ -48,7 +48,7 @@ class ReservaModel
     // Obtener programas de pesca
     public function getProgramasPesca($camaCod, $fecha)
     {
-        $sql = "SELECT PescFec, PescNo, PescCanRea FROM COPESC WHERE PescSta='C' AND PescFec>=? AND CamaCod=?";
+        $sql = "SELECT TOP 10 PescFec, PescNo, PescCanRea FROM COPESC WHERE PescSta='C' AND PescFec<=? AND CamaCod=? ORDER BY PescFec DESC";
         $params = array($fecha, $camaCod);
         $stmt = sqlsrv_query($this->db, $sql, $params);
 
@@ -68,6 +68,7 @@ class ReservaModel
     public function obtenerReservasPorFiltros($fecha) {
         $query = "SELECT 
                     c.GeReCodigo,
+                    d.GeReSecuencia,
                     c.GeReFecha,
                     d.GeReHora, 
                     d.GeReKilos, 
@@ -252,36 +253,51 @@ class ReservaModel
         sqlsrv_free_stmt($stmt);
         return $result['siguiente'];
     }
-    public function editarReserva($id, $camaCod, $pescNo, $fecha, $hora, $kilos, $observaciones, $usuario) {
+    public function editarReserva($id, $secuencia, $camaCod, $pescNo, $fecha, $hora, $kilos, $observaciones, $usuario) {
         try {
-            $sql = "UPDATE GesReserva SET 
+            // Validar datos de entrada
+            if (empty($id) || empty($secuencia) || empty($camaCod) || empty($pescNo) || empty($fecha) || empty($hora) || empty($kilos)) {
+                throw new Exception("Todos los campos son requeridos");
+            }
+
+            // Convertir hora a formato SQL
+            $horaFormateada = date('H:i:s', strtotime($hora));
+            
+            $sql = "UPDATE GetReservasDet SET 
                     CamaCod = ?, 
                     GeRePescNo = ?, 
-                    GeReFecha = ?, 
                     GeReHora = ?, 
                     GeReKilos = ?, 
                     GeReObservaciones = ?, 
-                    GeReUsuMod = ?, 
-                    GeReFecMod = GETDATE()
-                    WHERE GeReCodigo = ?";
+                    GeReUsrModificacionReserva = ?, 
+                    GeReFecModificacionReserva = GETDATE()
+                    WHERE GeReCodigo = ? AND GeReSecuencia = ?";
             
-            $params = array($camaCod, $pescNo, $fecha, $hora, $kilos, $observaciones, $usuario, $id);
+            $params = array(
+                $camaCod,
+                $pescNo,
+                $horaFormateada,
+                $kilos,
+                $observaciones,
+                $usuario,
+                $id,
+                $secuencia
+            );
+            
             $stmt = sqlsrv_query($this->db, $sql, $params);
             
             if ($stmt === false) {
-                error_log("Error en editarReserva: " . print_r(sqlsrv_errors(), true));
-                return false;
+                $errors = sqlsrv_errors();
+                throw new Exception("Error al actualizar reserva: " . print_r($errors, true));
             }
             
-            $rowsAffected = sqlsrv_rows_affected($stmt);
-            sqlsrv_free_stmt($stmt);
-            return $rowsAffected > 0;
+            return sqlsrv_rows_affected($stmt) > 0;
+            
         } catch (Exception $e) {
             error_log("Error en editarReserva: " . $e->getMessage());
-            return false;
+            throw $e;
         }
     }
-    
     public function obtenerReservaPorId($id) {
         try {
             $sql = "SELECT r.*, c.CamaNomCom 
@@ -304,6 +320,31 @@ class ReservaModel
             error_log("Error en obtenerReservaPorId: " . $e->getMessage());
             return null;
         }
+    }
+    public function validarDisponibilidad($camaCod, $fecha, $hora, $excluirReservaId = null) {
+        $sql = "SELECT COUNT(*) as total 
+                FROM GetReservasDet d
+                INNER JOIN GetReservasCab c ON d.GeReCodigo = c.GeReCodigo
+                WHERE d.CamaCod = ? 
+                AND CONVERT(DATE, c.GeReFecha) = ?
+                AND CONVERT(TIME, d.GeReHora) = ?
+                AND d.GeReEstadoDet = 'A'";
+        
+        $params = array($camaCod, $fecha, $hora);
+        
+        if ($excluirReservaId) {
+            $sql .= " AND d.GeReCodigo != ?";
+            $params[] = $excluirReservaId;
+        }
+        
+        $stmt = sqlsrv_query($this->db, $sql, $params);
+        
+        if ($stmt === false) {
+            throw new Exception("Error al validar disponibilidad");
+        }
+        
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        return $row['total'] == 0;
     }
 }
 ?>

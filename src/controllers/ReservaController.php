@@ -26,7 +26,7 @@ class ReservaController
         $getActions = ['getCamaroneras', 'getProgramas', 'getReservasExistentes'];
 
         // Acciones que deben ser POST
-        $postActions = ['guardarReserva'];
+        $postActions = ['guardarReserva','editarReserva'];
 
         if (in_array($action, $getActions)) {
             if ($method !== 'GET') {
@@ -54,6 +54,9 @@ class ReservaController
                 break;
             case 'guardarReserva':
                 $this->guardarReserva();
+                break;
+            case 'editarReserva':
+                $this->editarReserva();
                 break;
             default:
                 header("HTTP/1.1 400 Bad Request, Method Not Found");
@@ -135,16 +138,15 @@ class ReservaController
             echo json_encode(['error' => $e->getMessage()]);
         }
     }                                       
-    public function guardarReserva()
-    {
+    public function guardarReserva(){
         try {
             // Validar método HTTP
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 header("HTTP/1.1 405 Method Not Allowed");
-                echo json_encode(["error" => "Método no permitido"]);
+                echo json_encode(["success" => false, "message" => "Método no permitido"]);
                 return;
             }
-
+            
             // Obtener y validar datos
             $data = [
                 'camaCod' => $_POST['camaCod'] ?? null,
@@ -166,14 +168,15 @@ class ReservaController
             // Procesar reserva
             $result = $this->model->crearReservaCompleta($data);
 
-            if ($result) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Reserva guardada exitosamente'
-                ]);
-            } else {
-                throw new Exception("Error al guardar la reserva");
+            if ($result === false) {
+                throw new Exception("Error al guardar la reserva en la base de datos");
             }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Reserva guardada exitosamente',
+                'data' => $result // Opcional: devolver datos de la reserva creada
+            ]);
         } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode([
@@ -182,31 +185,41 @@ class ReservaController
             ]);
         }
     }
+
     public function editarReserva() {
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
         
         try {
-            $data = json_decode(file_get_contents('php://input'), true);
-            if (!$data) $data = $_POST;
-            
-            // Validar acceso a la camaronera
-            $reservaActual = $this->model->obtenerReservaPorId($data['reservaId']);
-            
-            if ($reservaActual['CamaCod'] !== $data['camaCod']) {
-                throw new Exception("No tienes permiso para editar reservas de esta camaronera");
+            // Validar método HTTP
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                throw new Exception("Método no permitido");
             }
-            
-            // Validar datos
-            if (empty($data['reservaId'])) throw new Exception("ID de reserva no proporcionado");
-            if (empty($data['camaCod'])) throw new Exception("Camaronera no proporcionada");
-            if (empty($data['pescNo'])) throw new Exception("Programa no proporcionado");
-            if (empty($data['fecha'])) throw new Exception("Fecha no proporcionada");
-            if (empty($data['hora'])) throw new Exception("Hora no proporcionada");
-            if (empty($data['kilos']) || $data['kilos'] <= 0) throw new Exception("Kilos no válidos");
-            
-            // Actualizar reserva
+
+            // Obtener datos
+            $data = [
+                'reservaId' => $_POST['reservaId'] ?? null,
+                'secuencia' => $_POST['secuencia'] ?? null, // Nuevo campo
+                'camaCod' => $_POST['camaCod'] ?? null,
+                'pescNo' => $_POST['pescNo'] ?? null,
+                'fecha' => $_POST['fecha'] ?? null,
+                'hora' => $_POST['hora'] ?? null,
+                'kilos' => $_POST['kilos'] ?? null,
+                'observaciones' => $_POST['observaciones'] ?? null,
+                'usuario' => $_POST['usuario'] ?? null
+            ];
+
+            // Validar datos requeridos
+            $requiredFields = ['reservaId', 'secuencia', 'camaCod', 'pescNo', 'fecha', 'hora', 'kilos', 'usuario'];
+            foreach ($requiredFields as $field) {
+                if (empty($data[$field])) {
+                    throw new Exception("El campo $field es requerido");
+                }
+            }
+
+            // Ejecutar la actualización
             $result = $this->model->editarReserva(
                 $data['reservaId'],
+                $data['secuencia'],
                 $data['camaCod'],
                 $data['pescNo'],
                 $data['fecha'],
@@ -215,14 +228,23 @@ class ReservaController
                 $data['observaciones'],
                 $data['usuario']
             );
-            
-            if ($result) {
-                echo json_encode(['success' => true, 'message' => 'Reserva actualizada correctamente']);
-            } else {
-                throw new Exception("Error al actualizar la reserva");
+
+            if ($result === false) {
+                throw new Exception("No se pudo actualizar la reserva");
             }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Reserva actualizada correctamente',
+                'data' => $result
+            ]);
+            
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
     }
     
