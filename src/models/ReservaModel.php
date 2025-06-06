@@ -10,7 +10,144 @@ class ReservaModel
         $database = new Database();
         $this->db = $database->getConnection();
     }
+    public function obtenerReservasFiltradas($filtros = [])
+    {
+        $sql = "SELECT 
+                    c.GeReCodigo,
+                    d.GeReSecuencia,
+                    c.GeReFecha,
+                    d.GeReHora, 
+                    d.GeReKilos, 
+                    d.GeReObservaciones,
+                    d.CamaCod,
+                    cm.CamaNomCom,
+                    d.GeRePescNo,
+                    p.PescFec as PescFecha,
+                    d.GeReEstadoDet
+                FROM GetReservasDet d
+                INNER JOIN GetReservasCab c ON d.GeReCodigo = c.GeReCodigo
+                LEFT JOIN COCAMA cm ON d.CamaCod = cm.CamaCod
+                LEFT JOIN COPESC p ON d.GeRePescNo = p.PescNo AND d.CamaCod = p.CamaCod
+                WHERE 1=1";
 
+        $params = [];
+
+        // Aplicar filtros
+        if (!empty($filtros['fecha'])) {
+            $sql .= " AND CONVERT(DATE, c.GeReFecha) = ?";
+            $params[] = $filtros['fecha'];
+        }
+
+        if (!empty($filtros['hora'])) {
+            $sql .= " AND CONVERT(TIME, d.GeReHora) = ?";
+            $params[] = $filtros['hora'];
+        }
+
+        if (!empty($filtros['camaCod'])) {
+            $sql .= " AND d.CamaCod = ?";
+            $params[] = $filtros['camaCod'];
+        }
+
+        if (!empty($filtros['pescNo'])) {
+            $sql .= " AND d.GeRePescNo = ?";
+            $params[] = $filtros['pescNo'];
+        }
+
+        if (!empty($filtros['estado'])) {
+            $sql .= " AND d.GeReEstadoDet = ?";
+            $params[] = $filtros['estado'];
+        }
+
+        $sql .= " ORDER BY c.GeReFecha DESC, d.GeReHora ASC";
+
+        $stmt = sqlsrv_query($this->db, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error al obtener reservas: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $reservas = [];
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            // Formatear fechas y horas
+            if ($row['GeReFecha'] instanceof DateTime) {
+                $row['GeReFecha'] = $row['GeReFecha']->format('Y-m-d');
+            }
+            if ($row['GeReHora'] instanceof DateTime) {
+                $row['GeReHora'] = $row['GeReHora']->format('H:i');
+            }
+            if (isset($row['PescFecha']) && $row['PescFecha'] instanceof DateTime) {
+                $row['PescFecha'] = $row['PescFecha']->format('Y-m-d');
+            }
+            $reservas[] = $row;
+        }
+
+        sqlsrv_free_stmt($stmt);
+        return $reservas;
+    }
+        public function cambiarEstadoReserva($codigo, $secuencia, $nuevoEstado, $usuario)
+    {
+        $sql = "UPDATE GetReservasDet 
+                SET GeReEstadoDet = ?, 
+                    GeReUsrModificacionReserva = ?, 
+                    GeReFecModificacionReserva = GETDATE()
+                WHERE GeReCodigo = ? AND GeReSecuencia = ?";
+
+        $params = [$nuevoEstado, $usuario, $codigo, $secuencia];
+        $stmt = sqlsrv_query($this->db, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error al cambiar estado: " . print_r(sqlsrv_errors(), true));
+        }
+
+        return sqlsrv_rows_affected($stmt) > 0;
+    }
+
+    // Obtener detalles de una reserva
+    public function obtenerDetalleReserva($codigo, $secuencia)
+    {
+        $sql = "SELECT 
+                    c.GeReCodigo,
+                    d.GeReSecuencia,
+                    c.GeReFecha,
+                    d.GeReHora, 
+                    d.GeReKilos, 
+                    d.GeReObservaciones,
+                    d.CamaCod,
+                    cm.CamaNomCom,
+                    d.GeRePescNo,
+                    p.PescFec as PescFecha,
+                    d.GeReEstadoDet
+                FROM GetReservasDet d
+                INNER JOIN GetReservasCab c ON d.GeReCodigo = c.GeReCodigo
+                LEFT JOIN COCAMA cm ON d.CamaCod = cm.CamaCod
+                LEFT JOIN COPESC p ON d.GeRePescNo = p.PescNo AND d.CamaCod = p.CamaCod
+                WHERE d.GeReCodigo = ? AND d.GeReSecuencia = ?";
+
+        $params = [$codigo, $secuencia];
+        $stmt = sqlsrv_query($this->db, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error al obtener detalle de reserva: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $reserva = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        
+        if ($reserva) {
+            // Formatear fechas y horas
+            if ($reserva['GeReFecha'] instanceof DateTime) {
+                $reserva['GeReFecha'] = $reserva['GeReFecha']->format('Y-m-d');
+            }
+            if ($reserva['GeReHora'] instanceof DateTime) {
+                $reserva['GeReHora'] = $reserva['GeReHora']->format('H:i');
+            }
+            if (isset($reserva['PescFecha']) && $reserva['PescFecha'] instanceof DateTime) {
+                $reserva['PescFecha'] = $reserva['PescFecha']->format('Y-m-d');
+            }
+        }
+
+        sqlsrv_free_stmt($stmt);
+        return $reserva;
+    }
     // Obtener camaroneras activas para el usuario
     public function getCamaroneras($codUsuario = null)
     {

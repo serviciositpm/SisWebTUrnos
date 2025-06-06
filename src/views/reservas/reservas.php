@@ -17,7 +17,8 @@ if (!isset($_SESSION['user'])) {
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+    <!-- <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css"> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Select2 -->
     <link rel="stylesheet" href="../../plugins/select2/css/select2.min.css">
     <link rel="stylesheet" href="../../plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
@@ -203,7 +204,7 @@ if (!isset($_SESSION['user'])) {
                             <div class="card card-primary card-outline">
                                 <div class="card-header">
                                     <h3 class="card-title">
-                                        <i class="fas fa-fish mr-2"></i>Seleccione Camaronera
+                                        <i class="fas fa-shrimp mr-2"></i>Seleccione Camaronera
                                     </h3>
                                     <div class="card-tools">
                                         <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -547,7 +548,7 @@ if (!isset($_SESSION['user'])) {
                                      data-pescno="${programa.PescNo}" 
                                      data-pescfec="${programa.PescFec}"
                                      data-pesccant="${programa.PescCanRea}">
-                                    <span class="info-box-icon bg-info"><i class="fas fa-fish"></i></span>
+                                    <span class="info-box-icon bg-info"><i class="fas fa-shrimp"></i></span>
                                     <div class="info-box-content">
                                         <span class="info-box-text">Programa #${programa.PescNo}</span>
                                         <span class="info-box-number">${programa.PescCanRea} unidades</span>

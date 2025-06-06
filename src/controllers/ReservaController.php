@@ -23,10 +23,10 @@ class ReservaController
         }
 
         // Acciones que deben ser GET
-        $getActions = ['getCamaroneras', 'getProgramas', 'getReservasExistentes'];
+        $getActions = ['getCamaroneras', 'getProgramas', 'getReservasExistentes', 'obtenerDetalleReserva', 'obtenerReservas','cambiarEstado'];
 
         // Acciones que deben ser POST
-        $postActions = ['guardarReserva','editarReserva'];
+        $postActions = ['guardarReserva', 'editarReserva'];
 
         if (in_array($action, $getActions)) {
             if ($method !== 'GET') {
@@ -58,9 +58,85 @@ class ReservaController
             case 'editarReserva':
                 $this->editarReserva();
                 break;
+            case 'obtenerDetalleReserva':
+                $this->obtenerDetalleReserva();
+                break;
+            case 'obtenerReservas':
+                $this->obtenerReservas();
+                break;
+            case 'cambiarEstado':
+                $this->cambiarEstado();
+                break;    
             default:
                 header("HTTP/1.1 400 Bad Request, Method Not Found");
                 echo json_encode(["error" => "Metodo  no válida"]);
+        }
+    }
+    public function obtenerReservas()
+    {
+        try {
+            // Obtener parámetros de filtro
+            $filtros = [
+                'fecha' => $_GET['fecha'] ?? null,
+                'hora' => $_GET['hora'] ?? null,
+                'camaCod' => $_GET['camaCod'] ?? null,
+                'pescNo' => $_GET['pescNo'] ?? null,
+                'estado' => $_GET['estado'] ?? null
+            ];
+
+            $reservas = $this->model->obtenerReservasFiltradas($filtros);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $reservas,
+                'total' => count($reservas)
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function cambiarEstado()
+    {
+        try {
+            $codigo = $_POST['codigo'];
+            $secuencia = $_POST['secuencia'];
+            $nuevoEstado = $_POST['nuevoEstado'];
+            $usuario = $_POST['usuario'] ?? '01005'; // Usuario por defecto si no se envía
+
+            $resultado = $this->model->cambiarEstadoReserva($codigo, $secuencia, $nuevoEstado, $usuario);
+
+            echo json_encode([
+                'success' => $resultado,
+                'message' => $resultado ? 'Estado actualizado correctamente' : 'No se pudo actualizar el estado'
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function obtenerDetalleReserva()
+    {
+        try {
+            $codigo = $_GET['codigo'];
+            $secuencia = $_GET['secuencia'];
+
+            $reserva = $this->model->obtenerDetalleReserva($codigo, $secuencia);
+
+            echo json_encode([
+                'success' => true,
+                'data' => $reserva
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
@@ -122,23 +198,25 @@ class ReservaController
             echo json_encode(["error" => $e->getMessage()]);
         }
     }
-    public function getReservasExistentes() {
+    public function getReservasExistentes()
+    {
         try {
             $fecha = $_GET['fecha'] ?? null;
-            
+
             if (!$fecha) {
                 throw new Exception("El parámetro fecha es requerido");
             }
 
             $reservas = $this->model->obtenerReservasPorFiltros($fecha);
-            
+
             echo json_encode($reservas);
         } catch (Exception $e) {
             header("HTTP/1.1 500 Internal Server Error");
             echo json_encode(['error' => $e->getMessage()]);
         }
-    }                                       
-    public function guardarReserva(){
+    }
+    public function guardarReserva()
+    {
         try {
             // Validar método HTTP
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -146,7 +224,7 @@ class ReservaController
                 echo json_encode(["success" => false, "message" => "Método no permitido"]);
                 return;
             }
-            
+
             // Obtener y validar datos
             $data = [
                 'camaCod' => $_POST['camaCod'] ?? null,
@@ -186,9 +264,10 @@ class ReservaController
         }
     }
 
-    public function editarReserva() {
+    public function editarReserva()
+    {
         header('Content-Type: application/json; charset=utf-8');
-        
+
         try {
             // Validar método HTTP
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -238,7 +317,7 @@ class ReservaController
                 'message' => 'Reserva actualizada correctamente',
                 'data' => $result
             ]);
-            
+
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode([
@@ -247,11 +326,12 @@ class ReservaController
             ]);
         }
     }
-    
-    public function obtenerReservaPorId($id) {
+
+    public function obtenerReservaPorId($id)
+    {
         try {
             $reserva = $this->model->obtenerReservaPorId($id);
-            
+
             if ($reserva) {
                 return $reserva;
             } else {
