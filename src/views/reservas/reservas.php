@@ -30,6 +30,7 @@ if (!isset($_SESSION['user'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <!-- Custom styles -->
     <style>
+       
         .reservas-container {
             display: flex;
             flex-wrap: wrap;
@@ -303,7 +304,7 @@ if (!isset($_SESSION['user'])) {
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-primary">
-                    <h5 class="modal-title" id="reservaModalLabel">Registrar Reserva</h5>
+                    <h5 class="modal-title" id="reservaModalLabel"><i class="fas fa-plus-square"></i>   Registrar Reserva</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -320,8 +321,16 @@ if (!isset($_SESSION['user'])) {
                             <input type="text" class="form-control" id="modalPrograma" readonly>
                         </div>
                         <div class="form-group">
-                            <label>Fecha:</label>
+                            <label>Piscina:</label>
+                            <input type="text" class="form-control" id="modalPiscina" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Cosecha:</label>
                             <input type="text" class="form-control" id="modalFecha" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Llegada Planta:</label>
+                            <input type="text" class="form-control" id="modalFechaLlegadaPlanta" readonly>
                         </div>
                         <div class="form-group">
                             <label>Hora seleccionada:</label>
@@ -339,7 +348,10 @@ if (!isset($_SESSION['user'])) {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btnGuardarReserva">Guardar Reserva</button>
+                    <button type="button" class="btn btn-danger" id="btnAnularReserva" style="display: none;">
+                        <i class="fas fa-ban"></i> Anular Reserva
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarReserva"> <i class="fas fa-save"></i> Guardar Reserva</button>
                 </div>
             </div>
         </div>
@@ -397,10 +409,14 @@ if (!isset($_SESSION['user'])) {
                         GeReCodigo: $elemento.data('codigo'),
                         GeReSecuencia: $elemento.data('secuencia'),
                         CamaCod: $elemento.data('camaronera'),
+                        CamaNomCom: $('#camaroneraSelect option:selected').text(),
                         GeRePescNo: $elemento.data('programa'),
+                        PiscNo: $elemento.data('piscina'),
+                        fechaLlegadaPlanta: $elemento.data('fechaplanta'),
                         GeReFecha: $elemento.data('fecha'),
                         GeReHora: $elemento.data('hora'),
                         GeReKilos: $elemento.data('kilos'),
+                        GeReEstadoDet: $elemento.data('estado') || 'A', // Asignar estado por defecto
                         GeReObservaciones: $elemento.data('observaciones') || ''
                     };
                     
@@ -540,23 +556,26 @@ if (!isset($_SESSION['user'])) {
                     dataType: 'json',
                     success: function (data) {
                         $('#loadingProgramas').hide();
-
                         if (data.length > 0) {
                             $.each(data, function (index, programa) {
                                 var programaHtml = `
                                 <div class="info-box shadow-sm mb-2 info-box-programa" 
-                                     data-pescno="${programa.PescNo}" 
-                                     data-pescfec="${programa.PescFec}"
-                                     data-pesccant="${programa.PescCanRea}">
+                                    data-pescno="${programa.PescNo}" 
+                                    data-pescfec="${programa.PescFec}"
+                                    data-pesccant="${programa.PescCanRea}"
+                                    data-piscno="${programa.PiscNo}"
+                                    data-fechaplanta="${programa.fechaLlegadaPlanta}">
                                     <span class="info-box-icon bg-info"><i class="fas fa-shrimp"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text">Programa #${programa.PescNo}</span>
-                                        <span class="info-box-number">${programa.PescCanRea} unidades</span>
+                                        <span class="info-box-text">
+                                            <strong>Programa #${programa.PescNo} - Piscina ${programa.PiscNo}</strong>
+                                        </span>
+                                        <span class="info-box-number">${(programa.PescCanRea / 1000).toFixed(2)} Ton</span>
                                         <div class="progress">
                                             <div class="progress-bar" style="width: 70%"></div>
                                         </div>
                                         <span class="progress-description">
-                                            ${formatFecha(programa.PescFec)}
+                                            ${formatFecha(programa.PescFec)} - ${programa.CamaNomCom}
                                         </span>
                                     </div>
                                 </div>
@@ -569,11 +588,13 @@ if (!isset($_SESSION['user'])) {
                                 $('.info-box-programa').removeClass('selected');
                                 $(this).addClass('selected');
 
-                                // Guardar programa seleccionado
+                                // Guardar programa seleccionado con todos los datos
                                 selectedPrograma = {
                                     numero: $(this).data('pescno'),
                                     fecha: $(this).data('pescfec'),
-                                    cantidad: $(this).data('pesccant')
+                                    cantidad: $(this).data('pesccant'),
+                                    piscina: $(this).data('piscno'),
+                                    fechaLlegadaPlanta: $(this).data('fechaplanta')
                                 };
 
                                 // Cargar horarios y reservas existentes
@@ -640,6 +661,7 @@ if (!isset($_SESSION['user'])) {
 
             // Función para generar los horarios
             function generarHorarios() {
+                console.log("Generando horarios con reservas existentes:", reservasExistentes);
                 let html = '<div class="row">';
 
                 // Generar horarios de 00:00 a 23:00
@@ -667,11 +689,14 @@ if (!isset($_SESSION['user'])) {
                     if (reservasHora.length > 0) {
                         reservasHora.forEach((reserva, index) => {
                             const colorIndex = index % coloresReservas.length;
+                            const toneladas = (reserva.GeReKilos / 1000).toFixed(2);
                             const tooltipContent = `
-                                Programa de Pes: ${reserva.GeRePescNo || 'N/A'}<br>
-                                Kilos: ${reserva.GeReKilos || '0'} kg<br>
-                                Camaronera: ${reserva.CamaCod || 'N/A'}<br>
-                                Observaciones: ${reserva.GeReObservaciones || 'Ninguna'}                               
+                                Programa: ${reserva.GeRePescNo || 'N/A'}<br>
+                                Piscina: ${reserva.PiscNo || 'N/A'}<br>
+                                Toneladas: ${toneladas} T<br>
+                                Camaronera: ${reserva.CamaNomCom || 'N/A'}<br>
+                                Fecha Llegada: ${reserva.fechaLlegadaPlanta ? formatFecha(reserva.fechaLlegadaPlanta) : 'N/A'}<br>
+                                Observaciones: ${reserva.GeReObservaciones || 'Ninguna'}                      
                             `;
 
                             // Escapar las comillas simples en el JSON
@@ -683,13 +708,16 @@ if (!isset($_SESSION['user'])) {
                                     data-secuencia="${reserva.GeReSecuencia}"
                                     data-camaronera="${reserva.CamaCod}"
                                     data-programa="${reserva.GeRePescNo}"
+                                    data-piscina="${reserva.PiscNo}"
+                                    data-fechaplanta="${reserva.fechaLlegadaPlanta}"
                                     data-fecha="${reserva.GeReFecha}"
                                     data-hora="${reserva.GeReHora}"
                                     data-kilos="${reserva.GeReKilos}"
+                                    data-estado="${reserva.GeReEstadoDet}"
                                     data-observaciones="${reserva.GeReObservaciones || ''}"
                                     data-toggle="tooltip"
                                     title="${tooltipContent}">
-                                    ${reserva.GeRePescNo || 'Prog.'}: ${reserva.GeReKilos || '0'} kg
+                                    ${reserva.GeRePescNo || 'Prog.'} - Pisc ${reserva.PiscNo}: ${toneladas} T (${reserva.CamaNomCom})
                                 </div>
                             `;
                         });
@@ -741,11 +769,23 @@ if (!isset($_SESSION['user'])) {
                 // Cambiar título y botón
                 $('#reservaModal .modal-title').html('<i class="fas fa-edit"></i> Editar Reserva');
                 $('#btnGuardarReserva').html('<i class="fas fa-save"></i> Actualizar Reserva');
-                
+                console.log(reserva.GeReEstadoDet, selectedCamaronera);
+                console.log(reserva);
+                if (reserva.GeReEstadoDet === 'A' && reserva.CamaCod === selectedCamaronera) {
+                    $('#btnAnularReserva').show();
+                } else {
+                    $('#btnAnularReserva').hide();
+                }
                 // Llenar datos en el modal
                 $('#modalReservaId').val(reserva.GeReCodigo);
-                $('#modalCamaronera').val($('#camaroneraSelect option:selected').text());
+                $('#modalCamaronera').val(reserva.CamaNomCom || $('#camaroneraSelect option:selected').text());
                 $('#modalPrograma').val('Programa #' + reserva.GeRePescNo);
+                const piscina = reserva.PiscNo ? 'Piscina ' + reserva.PiscNo : 'N/A';
+                $('#modalPiscina').val(piscina);
+                const fechaLlegada = reserva.fechaLlegadaPlanta ? 
+                         formatFecha(reserva.fechaLlegadaPlanta) : 
+                         (reserva.PescFecha ? formatFecha(reserva.PescFecha) : 'N/A');
+                $('#modalFechaLlegadaPlanta').val(fechaLlegada);
                 $('#modalFecha').val(formatFecha(reserva.GeReFecha));
                 $('#modalHora').val(reserva.GeReHora.substring(0, 5));
                 $('#modalKilos').val(reserva.GeReKilos);
@@ -754,10 +794,63 @@ if (!isset($_SESSION['user'])) {
                 // Mostrar modal
                 $('#reservaModal').modal('show');
             }
+            // Evento para anular reserva
+            $('#btnAnularReserva').click(function() {
+                if (confirm('¿Está seguro que desea anular esta reserva?')) {
+                    anularReserva();
+                }
+            });
+            // Función para anular reserva
+            function anularReserva() {
+                const reservaId = $('#modalReservaId').val();
+                const secuencia = reservaSeleccionada.GeReSecuencia;
+                
+                if (!reservaId || !secuencia) {
+                    toastr.error('No se pudo obtener la información de la reserva');
+                    return;
+                }
+
+                $.ajax({
+                    url: '../../controllers/ReservaController.php?action=cambiarEstado',
+                    type: 'POST',
+                    data: {
+                        codigo: reservaId,
+                        secuencia: secuencia,
+                        nuevoEstado: 'I', // Estado Inactivo/Anulado
+                        usuario: '<?php echo $_SESSION['user']['codigo'] ?? '01005'; ?>'
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            toastr.success(response.message);
+                            $('#reservaModal').modal('hide');
+                            
+                            // Recargar horarios
+                            if (selectedCamaronera && selectedFecha) {
+                                cargarHorariosYReservas();
+                            }
+                        } else {
+                            toastr.error(response.message || 'Error al anular la reserva');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        toastr.error('Error al comunicarse con el servidor: ' + error);
+                    }
+                });
+            }
             // Función para abrir modal de reserva
             function abrirModalReserva(hora) {
                 if (!selectedCamaronera || !selectedFecha || !selectedPrograma) {
                     toastr.error('Seleccione todos los datos requeridos');
+                    return;
+                }
+
+                // Obtener el elemento del programa seleccionado
+                const $programaSeleccionado = $('.info-box-programa.selected');
+                
+                // Validar que se haya seleccionado un programa
+                if ($programaSeleccionado.length === 0) {
+                    toastr.error('No se ha seleccionado un programa');
                     return;
                 }
 
@@ -767,6 +860,8 @@ if (!isset($_SESSION['user'])) {
                 // Llenar datos en el modal
                 $('#modalCamaronera').val(camaroneraNombre);
                 $('#modalPrograma').val('Programa #' + selectedPrograma.numero);
+                $('#modalPiscina').val('Piscina ' + $programaSeleccionado.data('piscno'));
+                $('#modalFechaLlegadaPlanta').val(formatFecha($programaSeleccionado.data('fechaplanta')));
                 $('#modalFecha').val(formatFecha(selectedFecha));
                 $('#modalHora').val(hora);
                 $('#modalKilos').val('');
@@ -872,7 +967,8 @@ if (!isset($_SESSION['user'])) {
             // Modificar el evento de cierre del modal para resetear variables
             $('#reservaModal').on('hidden.bs.modal', function () {
                 eservaSeleccionada = null;
-                $('#reservaModal .modal-title').text('Registrar Reserva');
+                /* $('#reservaModal .modal-title').text('Registrar Reserva'); */
+                $('#reservaModal .modal-title').html('<i class="fas fa-plus-square"></i> Registrar Reserva');
                 $('#btnGuardarReserva').html('<i class="fas fa-save"></i> Guardar Reserva');
                 $('#modalReservaId').val('');
             });

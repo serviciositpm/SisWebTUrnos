@@ -53,7 +53,7 @@
                                 <div class="form-group">
                                     <label><i class="fas fa-water"></i> Camaronera</label>
                                     <select id="camaCod" name="camaCod" class="form-control select2" style="width: 100%;">
-                                        <option value="">Todas</option>
+                                         <option value="">-- Seleccione una camaronera --</option>
                                         <!-- Se llenará por AJAX -->
                                     </select>
                                 </div>
@@ -193,21 +193,41 @@ $(document).ready(function() {
             url: '../../controllers/ReservaController.php?action=getCamaroneras',
             type: 'GET',
             dataType: 'json',
-            success: function(response) {
-                if(response.success) {
-                    var select = $('#camaCod');
-                    select.empty();
-                    select.append('<option value="">Todas</option>');
-                    
-                    $.each(response.data, function(index, camaronera) {
-                        select.append(`<option value="${camaronera.CamaCod}">${camaronera.CamaNomCom}</option>`);
-                    });
+            beforeSend: function () {
+                $('#camaCod').prop('disabled', true);
+            },
+            success: function (data) {
+                console.log("Datos recibidos:", data);
+
+                if (data.error) {
+                    toastr.error(data.error);
                 } else {
-                    mostrarError(response.message);
+                    var select = $('#camaCod');
+                    select.empty().append('<option value="">-- Seleccione una camaronera --</option>');
+
+                    if (Array.isArray(data)) {
+                        $.each(data, function (index, camaronera) {
+                            if (camaronera.CamaCod && camaronera.CamaNomCom) {
+                                select.append($('<option>', {
+                                    value: camaronera.CamaCod,
+                                    text: camaronera.CamaNomCom
+                                }));
+                            }
+                        });
+                    }
+
+                    select.prop('disabled', false);
+
+                    if (data.length === 1) {
+                        select.val(data[0].CamaCod).trigger('change');
+                    }
                 }
             },
-            error: function(xhr, status, error) {
-                mostrarError('Error al cargar camaroneras: ' + error);
+            error: function (xhr, status, error) {
+                console.error("Error en AJAX:", status, error);
+                console.log("Respuesta completa:", xhr.responseText);
+                toastr.error('Error al cargar las camaroneras. Ver consola para detalles.');
+                $('#camaCod').prop('disabled', false);
             }
         });
     }

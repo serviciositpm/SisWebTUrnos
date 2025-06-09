@@ -23,10 +23,10 @@ class ReservaController
         }
 
         // Acciones que deben ser GET
-        $getActions = ['getCamaroneras', 'getProgramas', 'getReservasExistentes', 'obtenerDetalleReserva', 'obtenerReservas','cambiarEstado'];
+        $getActions = ['getCamaroneras', 'getProgramas', 'getReservasExistentes', 'obtenerDetalleReserva', 'obtenerReservas'];
 
         // Acciones que deben ser POST
-        $postActions = ['guardarReserva', 'editarReserva'];
+        $postActions = ['guardarReserva', 'editarReserva','cambiarEstado'];
 
         if (in_array($action, $getActions)) {
             if ($method !== 'GET') {
@@ -72,6 +72,7 @@ class ReservaController
                 echo json_encode(["error" => "Metodo  no válida"]);
         }
     }
+    
     public function obtenerReservas()
     {
         try {
@@ -110,7 +111,7 @@ class ReservaController
 
             echo json_encode([
                 'success' => $resultado,
-                'message' => $resultado ? 'Estado actualizado correctamente' : 'No se pudo actualizar el estado'
+                'message' => $resultado ? 'Estado de la reserva cambiado correctamente' : 'No se pudo actualizar el estado'
             ]);
         } catch (Exception $e) {
             echo json_encode([
@@ -198,6 +199,7 @@ class ReservaController
             echo json_encode(["error" => $e->getMessage()]);
         }
     }
+
     public function getReservasExistentes()
     {
         try {

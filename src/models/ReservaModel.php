@@ -115,12 +115,21 @@ class ReservaModel
                     d.CamaCod,
                     cm.CamaNomCom,
                     d.GeRePescNo,
+                    ps.PiscNo,
                     p.PescFec as PescFecha,
+                    p.PescFecPla as fechaLlegadaPlanta,
                     d.GeReEstadoDet
-                FROM GetReservasDet d
-                INNER JOIN GetReservasCab c ON d.GeReCodigo = c.GeReCodigo
-                LEFT JOIN COCAMA cm ON d.CamaCod = cm.CamaCod
-                LEFT JOIN COPESC p ON d.GeRePescNo = p.PescNo AND d.CamaCod = p.CamaCod
+                From		GetReservasCab	c
+                Inner Join	GetReservasDet	d
+                On			c.GeReCodigo	=	d.GeReCodigo
+                Join		cocama cm
+                On			cm.CamaCod		=	d.CamaCod
+                Join		COPESC p
+                On			p.PescNo		=	d.GeRePescNo
+                And			p.CamaCod		=	d.CamaCod
+                Join		COPISC	ps
+                On			ps.PiscCod		=	p.PiscCod
+                And			ps.CamaCod		=	p.CamaCod
                 WHERE d.GeReCodigo = ? AND d.GeReSecuencia = ?";
 
         $params = [$codigo, $secuencia];
@@ -185,7 +194,21 @@ class ReservaModel
     // Obtener programas de pesca
     public function getProgramasPesca($camaCod, $fecha)
     {
-        $sql = "SELECT TOP 10 PescFec, PescNo, PescCanRea FROM COPESC WHERE PescSta='C' AND PescFec<=? AND CamaCod=? ORDER BY PescFec DESC";
+        $sql = "SELECT TOP 5 
+                    pesc.PescFec, 
+                    pesc.PescNo, 
+                    pesc.PescCanRea,
+                    pisc.PiscNo,
+                    cama.CamaNomCom,
+                    pesc.PescFecPla as fechaLlegadaPlanta
+                FROM COPESC pesc
+                INNER JOIN COPISC pisc ON pesc.CamaCod = pisc.CamaCod AND pesc.PiscCod = pisc.PiscCod
+                JOIN COCAMA cama ON pesc.CamaCod = cama.CamaCod
+                WHERE PescSta='C' 
+                AND PescFec<=? 
+                AND pesc.CamaCod=? 
+                ORDER BY PescFec DESC";
+        
         $params = array($fecha, $camaCod);
         $stmt = sqlsrv_query($this->db, $sql, $params);
 
@@ -197,27 +220,42 @@ class ReservaModel
         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
             // Convertir DateTime a string para JSON
             $row['PescFec'] = $row['PescFec']->format('Y-m-d');
+            if ($row['fechaLlegadaPlanta'] instanceof DateTime) {
+                $row['fechaLlegadaPlanta'] = $row['fechaLlegadaPlanta']->format('Y-m-d');
+            }
             $programas[] = $row;
         }
 
         return $programas;
     }
     public function obtenerReservasPorFiltros($fecha) {
-        $query = "SELECT 
-                    c.GeReCodigo,
-                    d.GeReSecuencia,
-                    c.GeReFecha,
-                    d.GeReHora, 
-                    d.GeReKilos, 
-                    d.GeReObservaciones,
-                    d.CamaCod,
-                    d.GeRePescNo,
-                    d.GeReEstadoDet
-                FROM GetReservasDet d
-                INNER JOIN GetReservasCab c ON d.GeReCodigo = c.GeReCodigo
-                WHERE CONVERT(DATE, c.GeReFecha) = ?
-                AND d.GeReEstadoDet = 'A'
-                ORDER BY d.GeReHora";
+        $query = "  Select 
+                            c.GeReCodigo,
+                            d.GeReSecuencia,
+                            c.GeReFecha,
+                            d.GeReHora, 
+                            d.GeReKilos, 
+                            d.GeReObservaciones,
+                            d.CamaCod,
+                            cm.CamaNomCom,
+                            d.GeRePescNo,
+                            ps.PiscNo,
+                            p.PescFecPla as fechaLlegadaPlanta,
+                            d.GeReEstadoDet
+                    From		GetReservasCab	c
+                    Inner Join	GetReservasDet	d
+                    On			c.GeReCodigo	=	d.GeReCodigo
+                    Join		cocama cm
+                    On			cm.CamaCod		=	d.CamaCod
+                    Join		COPESC p
+                    On			p.PescNo		=	d.GeRePescNo
+                    And			p.CamaCod		=	d.CamaCod
+                    Join		COPISC	ps
+                    On			ps.PiscCod		=	p.PiscCod
+                    And			ps.CamaCod		=	p.CamaCod
+                    WHERE		CONVERT(DATE, c.GeReFecha) = ?
+                    AND			d.GeReEstadoDet = 'A'
+                    ORDER BY	d.GeReHora ASC";
 
         $params = array($fecha);
         $stmt = sqlsrv_query($this->db, $query, $params);
@@ -233,6 +271,9 @@ class ReservaModel
             // Convertir objetos DateTime a strings si es necesario
             if ($row['GeReFecha'] instanceof DateTime) {
                 $row['GeReFecha'] = $row['GeReFecha']->format('Y-m-d');
+            }
+            if ($row['fechaLlegadaPlanta'] instanceof DateTime) {
+                $row['fechaLlegadaPlanta'] = $row['fechaLlegadaPlanta']->format('Y-m-d');
             }
             if ($row['GeReHora'] instanceof DateTime) {
                 $row['GeReHora'] = $row['GeReHora']->format('H:i:s');
