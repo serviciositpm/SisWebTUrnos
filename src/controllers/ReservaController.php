@@ -23,7 +23,14 @@ class ReservaController
         }
 
         // Acciones que deben ser GET
-        $getActions = ['getCamaroneras', 'getProgramas', 'getReservasExistentes', 'obtenerDetalleReserva', 'obtenerReservas'];
+        $getActions =[ 'getCamaroneras', 
+                        'getProgramas', 
+                        'getReservasExistentes', 
+                        'obtenerDetalleReserva', 
+                        'obtenerReservas',
+                        'validarKilosDisponibles',
+                        'getHorariosBloqueados'
+                    ];
 
         // Acciones que deben ser POST
         $postActions = ['guardarReserva', 'editarReserva','cambiarEstado'];
@@ -67,9 +74,43 @@ class ReservaController
             case 'cambiarEstado':
                 $this->cambiarEstado();
                 break;    
+            case 'validarKilosDisponibles':
+                $this->validarKilosDisponibles();
+                break;
+            case 'getHorariosBloqueados':
+                $this->getHorariosBloqueados();
+                break;
             default:
                 header("HTTP/1.1 400 Bad Request, Method Not Found");
                 echo json_encode(["error" => "Metodo  no válida"]);
+        }
+    }
+    private function validarHorarioPermitido($hora)
+    {
+        $horariosBloqueados = $this->model->obtenerHorariosBloqueados();
+        $horaFormateada = date('H:i', strtotime($hora));
+        
+        if (in_array($horaFormateada, $horariosBloqueados)) {
+            throw new Exception("No se pueden realizar reservas en el horario $horaFormateada (horario bloqueado)");
+        }
+        
+        return true;
+    }
+
+    public function getHorariosBloqueados()
+    {
+        try {
+            $horariosBloqueados = $this->model->obtenerHorariosBloqueados();
+            
+            echo json_encode([
+                'success' => true,
+                'horariosBloqueados' => $horariosBloqueados
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
     }
     
@@ -91,6 +132,38 @@ class ReservaController
                 'success' => true,
                 'data' => $reservas,
                 'total' => count($reservas)
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function validarKilosDisponibles()
+    {
+        try {
+            $pescNo = $_GET['pescNo'] ?? null;
+            $camaCod = $_GET['camaCod'] ?? null;
+            $reservaId = $_GET['reservaId'] ?? null;
+
+            if (!$pescNo || !$camaCod) {
+                throw new Exception("Datos incompletos para la validación");
+            }
+
+            // Obtener total del programa
+            $totalPrograma = $this->model->obtenerTotalKilosPrograma($pescNo, $camaCod);
+            
+            // Obtener total reservado (excluyendo la reserva actual si es edición)
+            $totalReservado = $this->model->obtenerTotalKilosReservados($pescNo, $camaCod, $reservaId);
+            
+            $disponible = $totalPrograma - $totalReservado;
+
+            echo json_encode([
+                'success' => true,
+                'totalPrograma' => $totalPrograma,
+                'totalReservado' => $totalReservado,
+                'disponible' => $disponible
             ]);
         } catch (Exception $e) {
             echo json_encode([
@@ -237,6 +310,8 @@ class ReservaController
                 'observaciones' => $_POST['observaciones'] ?? null,
                 'usuario' => $_POST['usuario'] ?? null
             ];
+
+            $this->validarHorarioPermitido($data['hora']);
 
             // Validaciones
             foreach ($data as $key => $value) {

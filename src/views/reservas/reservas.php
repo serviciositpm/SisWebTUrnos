@@ -28,8 +28,27 @@ if (!isset($_SESSION['user'])) {
     <!-- Theme style -->
     <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Custom styles -->
     <style>
+        .hour-slot.bloqueado {
+            background-color: #ffe6e6 !important;
+            border-left: 4px solid #ff9999 !important;
+            cursor: not-allowed !important;
+        }
+
+        .hour-slot.bloqueado .btn-reservar {
+            display: none !important;
+        }
+
+        .badge-danger {
+            background-color: #dc3545;
+            color: white;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
        
         .reservas-container {
             display: flex;
@@ -396,6 +415,8 @@ if (!isset($_SESSION['user'])) {
             let selectedFecha = null;
             let reservasExistentes = [];
             let reservaSeleccionada = null;
+            let horariosBloqueados = [];
+
             // En lugar de usar onclick en el HTML, usa esto:
             $(document).on('click', '.reservation-item', function(e) {
                 e.stopPropagation();
@@ -638,8 +659,45 @@ if (!isset($_SESSION['user'])) {
                     </div>
                 `);
 
+                // Primero cargar horarios bloqueados
+                cargarHorariosBloqueados()
+                    .then(() => {
+                        // Luego obtener reservas existentes
+                        return new Promise((resolve, reject) => {
+                            $.ajax({
+                                url: '../../controllers/ReservaController.php?action=getReservasExistentes',
+                                type: 'GET',
+                                data: {
+                                    fecha: selectedFecha
+                                },
+                                dataType: 'json',
+                                success: function(data) {
+                                    reservasExistentes = Array.isArray(data) ? data : [];
+                                    resolve();
+                                },
+                                error: function(xhr, status, error) {
+                                    console.error("Error al cargar reservas existentes:", error);
+                                    toastr.error("Error al cargar reservas existentes");
+                                    reservasExistentes = [];
+                                    reject();
+                                }
+                            });
+                        });
+                    })
+                    .then(() => {
+                        // Finalmente generar los horarios
+                        generarHorarios();
+                    })
+                    .catch(error => {
+                        console.error("Error al cargar datos:", error);
+                        toastr.error("Error al cargar información de horarios");
+                    });
+
+
+
+
                 // Obtener reservas existentes para esta fecha, camaronera y programa
-                $.ajax({
+                /* $.ajax({
                     url: '../../controllers/ReservaController.php?action=getReservasExistentes',
                     type: 'GET',
                     data: {
@@ -656,6 +714,28 @@ if (!isset($_SESSION['user'])) {
                         reservasExistentes = [];
                         generarHorarios();
                     }
+                }); */
+            }
+            // Función para cargar horarios bloqueados
+            function cargarHorariosBloqueados() {
+                return new Promise((resolve, reject) => {
+                    $.ajax({
+                        url: '../../controllers/ReservaController.php?action=getHorariosBloqueados',
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                horariosBloqueados = response.horariosBloqueados;
+                                resolve();
+                            } else {
+                                reject(response.message);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error completo:", xhr.responseText);
+                            reject('Error al cargar horarios bloqueados');
+                        }
+                    });
                 });
             }
 
@@ -667,8 +747,12 @@ if (!isset($_SESSION['user'])) {
                 // Generar horarios de 00:00 a 23:00
                 for (let hora = 0; hora < 24; hora++) {
                     const horaFormateada = hora.toString().padStart(2, '0') + ':00';
-
+                    const estaBloqueado = horariosBloqueados.includes(horaFormateada);
                     // Buscar reservas para esta hora
+                    // Clases CSS adicionales para horarios bloqueados
+                    const clasesBloqueado = estaBloqueado ? 'bloqueado disabled' : '';
+                    const estiloBloqueado = estaBloqueado ? 'style="background-color: #ffe6e6; border-left: 4px solid #ff9999;"' : '';
+
                     const reservasHora = reservasExistentes.filter(r => {
                         const horaReserva = r.GeReHora.split(':')[0]; // Extraer solo la hora
                         return horaReserva === hora.toString().padStart(2, '0');
@@ -676,13 +760,24 @@ if (!isset($_SESSION['user'])) {
 
                     html += `
                         <div class="col-md-4 col-sm-6">
-                            <div class="hour-slot" data-hora="${horaFormateada}">
+                            <div class="hour-slot ${clasesBloqueado}" data-hora="${horaFormateada}" ${estiloBloqueado}>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <strong>${horaFormateada}</strong>
-                                    <button class="btn btn-xs btn-primary btn-reservar" data-hora="${horaFormateada}">
+                                    <strong>${horaFormateada}</strong>`                                    
+                                    console.log(estaBloqueado)
+                                    if (estaBloqueado) {
+                                        html += `<span class="badge badge-danger">Bloqueado</span>`;
+                                    } else {
+                                        html += `
+                                                    <button class="btn btn-xs btn-primary btn-reservar" data-hora="${horaFormateada}">
+                                                        <i class="fas fa-plus"></i> Reservar
+                                                    </button>
+                                                `;
+                                    }
+                                    /* <button class="btn btn-xs btn-primary btn-reservar" data-hora="${horaFormateada}">
                                         <i class="fas fa-plus"></i> Reservar
-                                    </button>
-                                </div>
+                                    </button> */
+
+                                html += `</div>
                                 <div class="reservas-hora mt-2">`;
 
                     // Mostrar reservas existentes para esta hora
@@ -742,16 +837,26 @@ if (!isset($_SESSION['user'])) {
                     placement: 'top',
                     trigger: 'hover'
                 });
-
-                // Evento para el botón de reservar
+                // Evento para el botón de reservar (solo en horarios no bloqueados)
                 $('.btn-reservar').click(function (e) {
                     e.stopPropagation();
                     const horaSeleccionada = $(this).data('hora');
                     abrirModalReserva(horaSeleccionada);
                 });
+                // Evento para el botón de reservar
+                /* $('.btn-reservar').click(function (e) {
+                    e.stopPropagation();
+                    const horaSeleccionada = $(this).data('hora');
+                    abrirModalReserva(horaSeleccionada);
+                }); */
 
                 // Evento para seleccionar horario
-                $('.hour-slot').click(function () {
+                /* $('.hour-slot').click(function () {
+                    $('.hour-slot').removeClass('selected');
+                    $(this).addClass('selected');
+                }); */
+                // Evento para seleccionar horario (solo si no está bloqueado)
+                $('.hour-slot:not(.bloqueado)').click(function () {
                     $('.hour-slot').removeClass('selected');
                     $(this).addClass('selected');
                 });
@@ -796,9 +901,20 @@ if (!isset($_SESSION['user'])) {
             }
             // Evento para anular reserva
             $('#btnAnularReserva').click(function() {
-                if (confirm('¿Está seguro que desea anular esta reserva?')) {
-                    anularReserva();
-                }
+                Swal.fire({
+                    title: '¿Está seguro que desea anular esta reserva?',
+                    text: "Esta acción no se puede deshacer",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, anular',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        anularReserva();
+                    }
+                });
             });
             // Función para anular reserva
             function anularReserva() {
@@ -884,6 +1000,11 @@ if (!isset($_SESSION['user'])) {
                 const reservaId = $('#modalReservaId').val();
                 const esEdicion = reservaId && reservaId !== '';
 
+                // Obtener el programa seleccionado
+                const programaSeleccionado = $('.info-box-programa.selected').data('pesccant') || 0;
+                const kilosPrograma = parseFloat(programaSeleccionado); // Kilos totales del programa
+
+
                 /* const secuencia = esEdicion ? reservaSeleccionada.GeReSecuencia : null; */
                 // Validaciones
                 if (isNaN(kilos) || kilos <= 0) {
@@ -895,7 +1016,74 @@ if (!isset($_SESSION['user'])) {
                     toastr.error('Formato de hora inválido (use HH:MM)');
                     return;
                 }
+                validarKilosDisponibles(kilos, esEdicion ? reservaId : null)
+                .then(({ totalReservado, disponible }) => {
+                    if (kilos > disponible) {
+                        const mensaje = `No hay suficientes kilos disponibles.<br>
+                                        Kilos solicitados: ${kilos.toFixed(2)}<br>
+                                        Kilos disponibles: ${disponible.toFixed(2)}<br>
+                                        Kilos totales del programa: ${kilosPrograma.toFixed(2)}`;
+                        
+                        Swal.fire({
+                            title: 'Error en cantidad',
+                            html: mensaje,
+                            icon: 'error',
+                            confirmButtonText: 'Entendido'
+                        });
+                        return;
+                    }
 
+                    // Si pasa la validación, proceder con el guardado
+                    procederConGuardado(kilos, hora, observaciones, reservaId, esEdicion);
+                })
+                .catch(error => {
+                    console.error("Error al validar kilos:", error);
+                    toastr.error('Error al validar disponibilidad de kilos');
+                });
+
+
+                
+
+                
+            }
+            // Función para validar kilos disponibles
+            function validarKilosDisponibles(kilosSolicitados, reservaId = null) {
+                return new Promise((resolve, reject) => {
+                    const programaSeleccionado = $('.info-box-programa.selected');
+                    const pescNo = programaSeleccionado.data('pescno');
+                    const camaCod = selectedCamaronera;
+                    
+                    if (!pescNo || !camaCod) {
+                        reject(new Error('No se ha seleccionado un programa válido'));
+                        return;
+                    }
+
+                    $.ajax({
+                        url: '../../controllers/ReservaController.php?action=validarKilosDisponibles',
+                        type: 'GET',
+                        data: {
+                            pescNo: pescNo,
+                            camaCod: camaCod,
+                            reservaId: reservaId
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                resolve({
+                                    totalReservado: response.totalReservado,
+                                    disponible: response.disponible
+                                });
+                            } else {
+                                reject(new Error(response.message || 'Error al validar kilos'));
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            reject(new Error('Error en la comunicación con el servidor'));
+                        }
+                    });
+                });
+            }
+            function procederConGuardado(kilos, hora, observaciones, reservaId, esEdicion) {
                 const formData = new FormData();
                 formData.append('camaCod', selectedCamaronera);
                 formData.append('pescNo', esEdicion ? $('.info-box-programa.selected').data('pescno') : selectedPrograma.numero);
@@ -907,7 +1095,6 @@ if (!isset($_SESSION['user'])) {
 
                 if (esEdicion) {
                     formData.append('reservaId', reservaId);
-                    // Solo agregar secuencia si estamos editando y existe reservaSeleccionada
                     if (reservaSeleccionada && reservaSeleccionada.GeReSecuencia) {
                         formData.append('secuencia', reservaSeleccionada.GeReSecuencia);
                     } else {
@@ -921,8 +1108,6 @@ if (!isset($_SESSION['user'])) {
                     : '../../controllers/ReservaController.php?action=guardarReserva';
 
                 toastr.info(esEdicion ? 'Actualizando reserva...' : 'Creando reserva...');
-
-                // Limpiar toastr anterior para evitar duplicados
                 toastr.clear();
 
                 $.ajax({
@@ -931,18 +1116,16 @@ if (!isset($_SESSION['user'])) {
                     data: formData,
                     processData: false,
                     contentType: false,
-                    dataType: 'json', // Esperamos una respuesta JSON
-                    success: function (response) {
+                    dataType: 'json',
+                    success: function(response) {
                         if (response && response.success) {
                             toastr.success(response.message);
                             $('#reservaModal').modal('hide');
 
-                            // Forzar recarga de los datos
-                            if (selectedCamaronera && selectedFecha ) {
+                            if (selectedCamaronera && selectedFecha) {
                                 cargarHorariosYReservas();
                             }
 
-                            // Resetear el formulario
                             $('#formReserva')[0].reset();
                             reservaSeleccionada = null;
                         } else {
@@ -952,7 +1135,7 @@ if (!isset($_SESSION['user'])) {
                             toastr.error(errorMsg);
                         }
                     },
-                    error: function (xhr, status, error) {
+                    error: function(xhr, status, error) {
                         let errorMsg = 'Error en la comunicación con el servidor';
                         try {
                             const response = JSON.parse(xhr.responseText);
@@ -964,6 +1147,7 @@ if (!isset($_SESSION['user'])) {
                     }
                 });
             }
+
             // Modificar el evento de cierre del modal para resetear variables
             $('#reservaModal').on('hidden.bs.modal', function () {
                 eservaSeleccionada = null;

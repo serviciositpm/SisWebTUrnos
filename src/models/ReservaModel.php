@@ -84,7 +84,53 @@ class ReservaModel
         sqlsrv_free_stmt($stmt);
         return $reservas;
     }
-        public function cambiarEstadoReserva($codigo, $secuencia, $nuevoEstado, $usuario)
+    public function obtenerTotalKilosPrograma($pescNo, $camaCod)
+    {
+        $sql = "SELECT PescCanRea 
+            FROM COPESC 
+            WHERE PescNo = ? AND CamaCod = ?";
+
+        $params = array($pescNo, $camaCod);
+        $stmt = sqlsrv_query($this->db, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error al obtener total del programa: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        sqlsrv_free_stmt($stmt);
+
+        return $row ? (float) $row['PescCanRea'] : 0;
+    }
+
+    public function obtenerTotalKilosReservados($pescNo, $camaCod, $excluirReservaId = null)
+    {
+        $sql = "SELECT SUM(d.GeReKilos) as total
+            FROM GetReservasDet d
+            INNER JOIN GetReservasCab c ON d.GeReCodigo = c.GeReCodigo
+            WHERE d.GeRePescNo = ? 
+            AND d.CamaCod = ?
+            AND d.GeReEstadoDet = 'A'";
+
+        $params = array($pescNo, $camaCod);
+
+        if ($excluirReservaId) {
+            $sql .= " AND d.GeReCodigo != ?";
+            $params[] = $excluirReservaId;
+        }
+
+        $stmt = sqlsrv_query($this->db, $sql, $params);
+
+        if ($stmt === false) {
+            throw new Exception("Error al obtener total reservado: " . print_r(sqlsrv_errors(), true));
+        }
+
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        sqlsrv_free_stmt($stmt);
+
+        return $row ? (float) $row['total'] : 0;
+    }
+    public function cambiarEstadoReserva($codigo, $secuencia, $nuevoEstado, $usuario)
     {
         $sql = "UPDATE GetReservasDet 
                 SET GeReEstadoDet = ?, 
@@ -140,7 +186,7 @@ class ReservaModel
         }
 
         $reserva = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-        
+
         if ($reserva) {
             // Formatear fechas y horas
             if ($reserva['GeReFecha'] instanceof DateTime) {
@@ -208,7 +254,7 @@ class ReservaModel
                 AND PescFec<=? 
                 AND pesc.CamaCod=? 
                 ORDER BY PescFec DESC";
-        
+
         $params = array($fecha, $camaCod);
         $stmt = sqlsrv_query($this->db, $sql, $params);
 
@@ -228,7 +274,8 @@ class ReservaModel
 
         return $programas;
     }
-    public function obtenerReservasPorFiltros($fecha) {
+    public function obtenerReservasPorFiltros($fecha)
+    {
         $query = "  Select 
                             c.GeReCodigo,
                             d.GeReSecuencia,
@@ -280,9 +327,37 @@ class ReservaModel
             }
             $result[] = $row;
         }
-        
+
         sqlsrv_free_stmt($stmt);
         return $result;
+    }
+    public function obtenerHorariosBloqueados()
+    {
+        $sql = "SELECT AmGeDetHoraInicio
+                FROM AGAMGE cab
+                INNER JOIN AgAmgeDetHorarios det
+                ON cab.AmGecod = det.AmGecod
+                WHERE amgesta = '17'
+                AND AmGeDetEstadoHor = 'A'";
+        
+        $stmt = sqlsrv_query($this->db, $sql);
+        
+        if ($stmt === false) {
+            throw new Exception("Error al obtener horarios bloqueados: " . print_r(sqlsrv_errors(), true));
+        }
+        
+        $horariosBloqueados = [];
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            if ($row['AmGeDetHoraInicio'] instanceof DateTime) {
+                $horariosBloqueados[] = $row['AmGeDetHoraInicio']->format('H:i');
+            } else if (is_string($row['AmGeDetHoraInicio'])) {
+                // Si ya viene como string, asegurarnos que tenga formato HH:MM
+                $horariosBloqueados[] = substr($row['AmGeDetHoraInicio'], 0, 5);
+            }
+        }
+        
+        sqlsrv_free_stmt($stmt);
+        return $horariosBloqueados;
     }
     public function obtenerCodigoReservaPorFecha($fecha)
     {
@@ -431,7 +506,8 @@ class ReservaModel
         sqlsrv_free_stmt($stmt);
         return $result['siguiente'];
     }
-    public function editarReserva($id, $secuencia, $camaCod, $pescNo, $fecha, $hora, $kilos, $observaciones, $usuario) {
+    public function editarReserva($id, $secuencia, $camaCod, $pescNo, $fecha, $hora, $kilos, $observaciones, $usuario)
+    {
         try {
             // Validar datos de entrada
             if (empty($id) || empty($secuencia) || empty($camaCod) || empty($pescNo) || empty($fecha) || empty($hora) || empty($kilos)) {
@@ -440,7 +516,7 @@ class ReservaModel
 
             // Convertir hora a formato SQL
             $horaFormateada = date('H:i:s', strtotime($hora));
-            
+
             $sql = "UPDATE GetReservasDet SET 
                     CamaCod = ?, 
                     GeRePescNo = ?, 
@@ -450,7 +526,7 @@ class ReservaModel
                     GeReUsrModificacionReserva = ?, 
                     GeReFecModificacionReserva = GETDATE()
                     WHERE GeReCodigo = ? AND GeReSecuencia = ?";
-            
+
             $params = array(
                 $camaCod,
                 $pescNo,
@@ -461,28 +537,29 @@ class ReservaModel
                 $id,
                 $secuencia
             );
-            
+
             $stmt = sqlsrv_query($this->db, $sql, $params);
-            
+
             if ($stmt === false) {
                 $errors = sqlsrv_errors();
                 throw new Exception("Error al actualizar reserva: " . print_r($errors, true));
             }
-            
+
             return sqlsrv_rows_affected($stmt) > 0;
-            
+
         } catch (Exception $e) {
             error_log("Error en editarReserva: " . $e->getMessage());
             throw $e;
         }
     }
-    public function obtenerReservaPorId($id) {
+    public function obtenerReservaPorId($id)
+    {
         try {
             $sql = "SELECT r.*, c.CamaNomCom 
                     FROM GesReserva r
                     LEFT JOIN Camaroneras c ON r.CamaCod = c.CamaCod
                     WHERE r.GeReCodigo = ?";
-            
+
             $params = array($id);
             $stmt = sqlsrv_query($this->db, $sql, $params);
 
@@ -499,7 +576,8 @@ class ReservaModel
             return null;
         }
     }
-    public function validarDisponibilidad($camaCod, $fecha, $hora, $excluirReservaId = null) {
+    public function validarDisponibilidad($camaCod, $fecha, $hora, $excluirReservaId = null)
+    {
         $sql = "SELECT COUNT(*) as total 
                 FROM GetReservasDet d
                 INNER JOIN GetReservasCab c ON d.GeReCodigo = c.GeReCodigo
@@ -507,20 +585,20 @@ class ReservaModel
                 AND CONVERT(DATE, c.GeReFecha) = ?
                 AND CONVERT(TIME, d.GeReHora) = ?
                 AND d.GeReEstadoDet = 'A'";
-        
+
         $params = array($camaCod, $fecha, $hora);
-        
+
         if ($excluirReservaId) {
             $sql .= " AND d.GeReCodigo != ?";
             $params[] = $excluirReservaId;
         }
-        
+
         $stmt = sqlsrv_query($this->db, $sql, $params);
-        
+
         if ($stmt === false) {
             throw new Exception("Error al validar disponibilidad");
         }
-        
+
         $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
         return $row['total'] == 0;
     }
