@@ -203,6 +203,9 @@ class ReservaModel
             if ($reserva['GeReFecha'] instanceof DateTime) {
                 $reserva['GeReFecha'] = $reserva['GeReFecha']->format('Y-m-d');
             }
+            if ($reserva['fechaLlegadaPlanta'] instanceof DateTime) {
+                $reserva['fechaLlegadaPlanta'] = $reserva['fechaLlegadaPlanta']->format('Y-m-d');
+            }
             if ($reserva['GeReHora'] instanceof DateTime) {
                 $reserva['GeReHora'] = $reserva['GeReHora']->format('H:i');
             }

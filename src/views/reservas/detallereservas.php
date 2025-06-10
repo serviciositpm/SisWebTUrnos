@@ -32,7 +32,7 @@
                 <div class="card-body">
                     <form id="filtroForm">
                         <div class="row">
-                            <div class="col-md-2">
+                            <div class="col-md-2 col-6">
                                 <div class="form-group">
                                     <label><i class="fas fa-calendar-alt"></i> Fecha</label>
                                     <div class="input-group">
@@ -43,13 +43,13 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-1 col-6">
                                 <div class="form-group">
                                     <label><i class="fas fa-clock"></i> Hora</label>
                                     <input type="time" id="hora" name="hora" class="form-control">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 col-6">
                                 <div class="form-group">
                                     <label><i class="fas fa-water"></i> Camaronera</label>
                                     <select id="camaCod" name="camaCod" class="form-control select2"
@@ -59,21 +59,21 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 col-6">
                                 <div class="form-group">
                                     <label><i class="fas fa-list-ol"></i> Programa de Cosecha</label>
                                     <input type="text" id="pescNo" name="pescNo" class="form-control"
                                         placeholder="Número de programa">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 col-6">
                                 <div class="form-group">
                                     <label><i class="fas fa-shrimp"></i> Nro. Piscina</label>
                                     <input type="text" id="piscina" name="piscina" class="form-control"
                                         placeholder="Número de piscina">
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2 col-6">
                                 <div class="form-group">
                                     <label><i class="fas fa-toggle-on"></i> Estado</label>
                                     <select id="estado" name="estado" class="form-control select2" style="width: 100%;">
@@ -85,8 +85,8 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-1 d-flex align-items-end">
-                                <div class="form-group w-100">
+                            <div class="col-md-1 col-12">
+                                <div class="form-group" style="margin-top: 28px;">
                                     <button type="submit" class="btn btn-primary btn-block">
                                         <i class="fas fa-search mr-1"></i> Buscar
                                     </button>
@@ -265,7 +265,7 @@
                 success: function (response) {
                     console.log("Respuesta recibida:", response);
 
-                    if (response.success) {
+                    if (response.success && response.data) {
                         var tbody = $('#tablaReservas tbody');
                         tbody.empty();
 
@@ -367,10 +367,12 @@
                             $('#contadorRegistros').html(`Mostrando <strong>0</strong> registros`);
                         }
                     } else {
+                        console.error("Error en la respuesta:", response);
                         mostrarError(response.message);
                     }
                 },
                 error: function (xhr, status, error) {
+                    console.error("Error en AJAX:", status, error);
                     console.error("Error en AJAX - Respuesta completa:", xhr.responseText);
                     mostrarError('Error al cargar las reservas: ' + error);
                 }
@@ -384,6 +386,7 @@
                 type: 'GET',
                 dataType: 'json',
                 success: function (response) {
+                    console.log(response);
                     if (response.success) {
                         var reserva = response.data;
                         var estadoText = '';
@@ -413,13 +416,13 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label><i class="fas fa-calendar-alt"></i> Fecha:</label>
+                                    <label><i class="fas fa-calendar-alt"></i> Fecha Reserva:</label>
                                     <p class="form-control-static">${reserva.GeReFecha}</p>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label><i class="fas fa-clock"></i> Hora:</label>
+                                    <label><i class="fas fa-clock"></i> Hora Reserva:</label>
                                     <p class="form-control-static">${reserva.GeReHora}</p>
                                 </div>
                             </div>
@@ -441,7 +444,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label><i class="fas fa-fish"></i> Número de Piscina:</label>
+                                    <label><i class="fas fa-shrimp"></i> Número de Piscina:</label>
                                     <p class="form-control-static">${reserva.PiscNo || 'N/A'}</p>
                                 </div>
                             </div>

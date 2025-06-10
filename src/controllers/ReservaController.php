@@ -117,39 +117,43 @@ class ReservaController
     public function obtenerReservas()
     {
         try {
-            // Limpiar buffer de salida
-            if (ob_get_length()) {
-                ob_clean();
-            }
-            
-            // Establecer cabeceras correctas
+            // Limpiar buffer y establecer cabeceras con UTF-8
+            if (ob_get_length()) ob_clean();
             header('Content-Type: application/json; charset=utf-8');
 
-            // Obtener parámetros de filtro
             $filtros = [
                 'fecha' => $_GET['fecha'] ?? null,
                 'hora' => $_GET['hora'] ?? null,
                 'camaCod' => $_GET['camaCod'] ?? null,
-                'pescNo' => $_GET['pescNo'] ?? null, // Ahora es un texto
+                'pescNo' => $_GET['pescNo'] ?? null,
                 'piscina' => $_GET['piscina'] ?? null,
                 'estado' => $_GET['estado'] ?? null
             ];
-            $reservas = $this->model->obtenerReservasFiltradas($filtros);
 
+            $reservas = $this->model->obtenerReservasFiltradas($filtros);
+             // Verificar y convertir caracteres si es necesario
+            array_walk_recursive($reservas, function (&$item) {
+                if (is_string($item)) {
+                    // Convertir a UTF-8 si no lo está
+                    if (!mb_detect_encoding($item, 'UTF-8', true)) {
+                        $item = utf8_encode($item);
+                    }
+                }
+            });
             echo json_encode([
                 'success' => true,
                 'data' => $reservas,
                 'total' => count($reservas)
-            ], JSON_UNESCAPED_UNICODE); // Esta opción es clave
-            exit();
+            ], JSON_UNESCAPED_UNICODE);
+            
         } catch (Exception $e) {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'success' => false,
                 'message' => $e->getMessage()
             ], JSON_UNESCAPED_UNICODE);
-            exit();
         }
+        exit(); // Asegurar que no se envía nada más
     }
     public function validarKilosDisponibles()
     {
