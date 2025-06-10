@@ -33,7 +33,7 @@ class ReservaController
                     ];
 
         // Acciones que deben ser POST
-        $postActions = ['guardarReserva', 'editarReserva','cambiarEstado'];
+        $postActions = ['guardarReserva', 'editarReserva','cambiarEstado','cambiarEstadoDetalle'];
 
         if (in_array($action, $getActions)) {
             if ($method !== 'GET') {
@@ -79,6 +79,9 @@ class ReservaController
                 break;
             case 'getHorariosBloqueados':
                 $this->getHorariosBloqueados();
+                break;
+            case 'cambiarEstadoDetalle':
+                $this->cambiarEstadoDetalle();  
                 break;
             default:
                 header("HTTP/1.1 400 Bad Request, Method Not Found");
@@ -196,6 +199,36 @@ class ReservaController
             $usuario = $_POST['usuario'] ?? '01005'; // Usuario por defecto si no se envía
 
             $resultado = $this->model->cambiarEstadoReserva($codigo, $secuencia, $nuevoEstado, $usuario);
+
+            echo json_encode([
+                'success' => $resultado,
+                'message' => $resultado ? 'Estado de la reserva cambiado correctamente' : 'No se pudo actualizar el estado'
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    public function cambiarEstadoDetalle ()
+    {
+        try {
+            $codigo = $_POST['codigo'];
+            $secuencia = $_POST['secuencia'];
+            $nuevoEstado = $_POST['nuevoEstado'];
+            $observacion = $_POST['observacion'] ?? null;
+            $campoObservacion = $_POST['campoObservacion'] ?? null;
+            $usuario = $_POST['usuario'] ?? '01005'; // Usuario por defecto si no se envía
+
+            $resultado = $this->model->cambiarEstadoReservaDetalle(
+                $codigo, 
+                $secuencia, 
+                $nuevoEstado, 
+                $usuario,
+                $observacion,
+                $campoObservacion
+            );
 
             echo json_encode([
                 'success' => $resultado,

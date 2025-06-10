@@ -487,31 +487,59 @@
 
         // Función para cambiar estado (global para que pueda ser llamada desde los botones)
         window.cambiarEstado = function (codigo, secuencia, nuevoEstado) {
-            var accion = '';
+            let accion = '';
+            let titulo = '';
+            let campoObservacion = '';
+            
             switch (nuevoEstado) {
-                case 'P': accion = 'aprobar'; break;
-                case 'R': accion = 'rechazar'; break;
-                case 'I': accion = 'anular'; break;
+                case 'P': 
+                    accion = 'aprobar';
+                    titulo = 'Aprobar Reserva';
+                    campoObservacion = 'GeReObservacionesAprobacion';
+                    break;
+                case 'R': 
+                    accion = 'rechazar';
+                    titulo = 'Rechazar Reserva';
+                    campoObservacion = 'GeReObservacionesRechazo';
+                    break;
+                case 'I': 
+                    accion = 'anular';
+                    titulo = 'Anular Reserva';
+                    break;
             }
 
             Swal.fire({
-                title: '¿Confirmar acción?',
-                text: `Estás por ${accion} esta reserva de camarón`,
+                title: titulo,
+                html: `<p>Estás por ${accion} esta reserva de camarón</p>
+                    <div class="form-group">
+                        <label for="observacion">Observación:</label>
+                        <textarea id="observacion" class="form-control" rows="3" placeholder="Ingrese la observación"></textarea>
+                    </div>`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
                 confirmButtonText: `Sí, ${accion}`,
-                cancelButtonText: 'Cancelar'
+                cancelButtonText: 'Cancelar',
+                focusConfirm: false,
+                preConfirm: () => {
+                    return {
+                        observacion: document.getElementById('observacion').value
+                    }
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
+                    const observacion = result.value.observacion;
+                    
                     $.ajax({
-                        url: '../../controllers/ReservaController.php?action=cambiarEstado',
+                        url: '../../controllers/ReservaController.php?action=cambiarEstadoDetalle',
                         type: 'POST',
                         data: {
                             codigo: codigo,
                             secuencia: secuencia,
                             nuevoEstado: nuevoEstado,
+                            observacion: observacion,
+                            campoObservacion: campoObservacion,
                             usuario: '01005' // Esto debería venir de la sesión
                         },
                         dataType: 'json',

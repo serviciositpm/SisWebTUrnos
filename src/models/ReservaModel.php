@@ -158,7 +158,65 @@ class ReservaModel
 
         return sqlsrv_rows_affected($stmt) > 0;
     }
+    public function cambiarEstadoReservaDetalle($codigo, $secuencia, $nuevoEstado, $usuario, $observacion = null, $campoObservacion = null)
+    {
+        // Construir la consulta SQL dinámicamente según el estado
+        $sql = "UPDATE GetReservasDet 
+                SET GeReEstadoDet = ?,";
+        
+        // Agregar campos según el estado
+        switch ($nuevoEstado) {
+            case 'P': // Aprobación
+                $sql .= " GeReUsrModificacionReserva = ?, 
+                        GeReFecModificacionReserva = GETDATE(),";
+                break;
+            case 'R': // Rechazo
+                $sql .= " GeReUsrRechazaReserva = ?, 
+                        GeReFecRechazaReserva = GETDATE(),";
+                break;
+            case 'I': // Anulación
+                $sql .= " GeReUsrModificacionReserva = ?, 
+                        GeReFecModificacionReserva = GETDATE(),";
+                break;
+        }
+        
+        // Agregar campo de observación si corresponde
+        if ($campoObservacion && $observacion) {
+            $sql .= " $campoObservacion = ?,";
+        }
+        
+        // Eliminar la última coma y completar la consulta
+        $sql = rtrim($sql, ',') . " WHERE GeReCodigo = ? AND GeReSecuencia = ?";
+        
+        // Preparar parámetros
+        $params = [$nuevoEstado];
+        
+        // Agregar usuario según el estado
+        switch ($nuevoEstado) {
+            case 'P':
+            case 'R':
+            case 'I':
+                $params[] = $usuario;
+                break;
+        }
+        
+        // Agregar observación si corresponde
+        if ($campoObservacion && $observacion) {
+            $params[] = $observacion;
+        }
+        
+        // Agregar código y secuencia
+        $params[] = $codigo;
+        $params[] = $secuencia;
+        
+        $stmt = sqlsrv_query($this->db, $sql, $params);
 
+        if ($stmt === false) {
+            throw new Exception("Error al cambiar estado: " . print_r(sqlsrv_errors(), true));
+        }
+
+        return sqlsrv_rows_affected($stmt) > 0;
+    }
     // Obtener detalles de una reserva
     public function obtenerDetalleReserva($codigo, $secuencia)
     {
