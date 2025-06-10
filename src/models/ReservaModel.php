@@ -23,11 +23,14 @@ class ReservaModel
                     cm.CamaNomCom,
                     d.GeRePescNo,
                     p.PescFec as PescFecha,
-                    d.GeReEstadoDet
+                    d.GeReEstadoDet,
+                    ps.PiscNo,
+                    p.PescFecPla as fechaLlegadaPlanta
                 FROM GetReservasDet d
                 INNER JOIN GetReservasCab c ON d.GeReCodigo = c.GeReCodigo
                 LEFT JOIN COCAMA cm ON d.CamaCod = cm.CamaCod
                 LEFT JOIN COPESC p ON d.GeRePescNo = p.PescNo AND d.CamaCod = p.CamaCod
+                LEFT JOIN COPISC ps ON p.PiscCod = ps.PiscCod AND p.CamaCod = ps.CamaCod
                 WHERE 1=1";
 
         $params = [];
@@ -49,9 +52,14 @@ class ReservaModel
         }
 
         if (!empty($filtros['pescNo'])) {
-            $sql .= " AND d.GeRePescNo = ?";
-            $params[] = $filtros['pescNo'];
+            $sql .= " AND d.GeRePescNo LIKE ?";
+            $params[] = '%' . $filtros['pescNo'] . '%'; // Búsqueda parcial
         }
+        if (!empty($filtros['piscina'])) {
+            $sql .= " AND ps.PiscNo = ?";
+            $params[] = $filtros['piscina'];
+        }
+
 
         if (!empty($filtros['estado'])) {
             $sql .= " AND d.GeReEstadoDet = ?";
@@ -71,6 +79,9 @@ class ReservaModel
             // Formatear fechas y horas
             if ($row['GeReFecha'] instanceof DateTime) {
                 $row['GeReFecha'] = $row['GeReFecha']->format('Y-m-d');
+            }
+            if ($row['fechaLlegadaPlanta'] instanceof DateTime) {
+                $row['fechaLlegadaPlanta'] = $row['fechaLlegadaPlanta']->format('Y-m-d');
             }
             if ($row['GeReHora'] instanceof DateTime) {
                 $row['GeReHora'] = $row['GeReHora']->format('H:i');

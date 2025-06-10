@@ -117,27 +117,38 @@ class ReservaController
     public function obtenerReservas()
     {
         try {
+            // Limpiar buffer de salida
+            if (ob_get_length()) {
+                ob_clean();
+            }
+            
+            // Establecer cabeceras correctas
+            header('Content-Type: application/json; charset=utf-8');
+
             // Obtener parámetros de filtro
             $filtros = [
                 'fecha' => $_GET['fecha'] ?? null,
                 'hora' => $_GET['hora'] ?? null,
                 'camaCod' => $_GET['camaCod'] ?? null,
-                'pescNo' => $_GET['pescNo'] ?? null,
+                'pescNo' => $_GET['pescNo'] ?? null, // Ahora es un texto
+                'piscina' => $_GET['piscina'] ?? null,
                 'estado' => $_GET['estado'] ?? null
             ];
-
             $reservas = $this->model->obtenerReservasFiltradas($filtros);
 
             echo json_encode([
                 'success' => true,
                 'data' => $reservas,
                 'total' => count($reservas)
-            ]);
+            ], JSON_UNESCAPED_UNICODE); // Esta opción es clave
+            exit();
         } catch (Exception $e) {
+            header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'success' => false,
                 'message' => $e->getMessage()
-            ]);
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
         }
     }
     public function validarKilosDisponibles()
@@ -260,7 +271,7 @@ class ReservaController
             $fecha = $_GET['fecha'] ?? date('Y-m-d');
 
             $programas = $this->model->getProgramasPesca($camaCod, $fecha);
-
+            
             if (!is_array($programas)) {
                 throw new Exception("Datos de programas no válidos");
             }
