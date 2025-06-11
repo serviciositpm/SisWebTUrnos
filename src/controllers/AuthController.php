@@ -66,10 +66,13 @@ class AuthController {
         session_start();
         session_unset();
         session_destroy();
-        
         $base_url = $this->getBaseUrl();
-        header('Location: ' . $base_url . '/SisWebTurnos/src/views/auth/login.php');
+    // Forzar la redirección en la ventana principal, no en el iframe
+        echo "<script>window.top.location.href = '" . $base_url . "/SisWebTurnos/src/views/auth/login.php';</script>";
         exit();
+        /* $base_url = $this->getBaseUrl();
+        header('Location: ' . $base_url . '/SisWebTurnos/src/views/auth/login.php');
+        exit(); */
     }
 }
 

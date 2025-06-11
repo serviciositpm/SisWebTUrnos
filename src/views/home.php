@@ -47,9 +47,12 @@ if (!isset($_SESSION['user'])) {
                             <i class="fas fa-user mr-2"></i> Perfil
                         </a>
                         <div class="dropdown-divider"></div>
-                        <a href="../controllers/AuthController.php?action=logout" class="dropdown-item">
+                        <a href="../controllers/AuthController.php?action=logout" class="dropdown-item" target="_top">
                             <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
                         </a>
+                        <!-- <a href="../controllers/AuthController.php?action=logout" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
+                        </a> -->
                     </div>
                 </li>
             </ul>
