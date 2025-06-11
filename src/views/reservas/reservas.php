@@ -1,9 +1,13 @@
 <?php
-session_start();
-if (!isset($_SESSION['user'])) {
-    header('Location: ../auth/login.php');
-    exit();
-}
+    // Obtener el código del usuario desde la sesión
+    session_start();
+    $codigoUsuario = $_SESSION['user']['usuacod'] ?? null;
+    // Verificar si el usuario está logueado (esto es redundante porque el header ya lo hace)
+    if (!isset($_SESSION['user'])) {
+        /* header('Location: ../auth/login.php'); */
+        echo "<script>window.top.location.href = '../auth/login.php';</script>";
+        exit();
+    }
 ?>
 
 <!DOCTYPE html>

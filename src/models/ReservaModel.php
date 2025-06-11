@@ -323,7 +323,7 @@ class ReservaModel
                 INNER JOIN COPISC pisc ON pesc.CamaCod = pisc.CamaCod AND pesc.PiscCod = pisc.PiscCod
                 JOIN COCAMA cama ON pesc.CamaCod = cama.CamaCod
                 WHERE PescSta='C' 
-                AND PescFec<=? 
+                AND PescFec>=? 
                 AND pesc.CamaCod=? 
                 ORDER BY PescFec DESC";
 
@@ -409,7 +409,7 @@ class ReservaModel
                 FROM AGAMGE cab
                 INNER JOIN AgAmgeDetHorarios det
                 ON cab.AmGecod = det.AmGecod
-                WHERE amgesta = '17'
+                WHERE amgesta = '18'
                 AND AmGeDetEstadoHor = 'A'";
         
         $stmt = sqlsrv_query($this->db, $sql);

@@ -1,4 +1,17 @@
-<?php require_once '../layouts/header.php'; ?>
+<?php 
+    require_once '../layouts/header.php'; 
+    // Obtener el código del usuario desde la sesión
+    /* session_start(); */
+    $codigoUsuario = $_SESSION['user']['usuacod'] ?? null;
+    // Verificar si el usuario está logueado (esto es redundante porque el header ya lo hace)
+    if (!isset($_SESSION['user'])) {
+        /* header('Location: ../auth/login.php'); */
+        echo "<script>window.top.location.href = '../auth/login.php';</script>";
+        exit();
+    }
+
+
+?>
 
 <div class="content-wrapper" style="min-height: 901px;">
     <section class="content-header">
@@ -540,7 +553,8 @@
                             nuevoEstado: nuevoEstado,
                             observacion: observacion,
                             campoObservacion: campoObservacion,
-                            usuario: '01005' // Esto debería venir de la sesión
+                            usuario: '<?php echo $_SESSION['user']['usuacod']; ?>' 
+                            /* usuario: '01005' // Esto debería venir de la sesión */
                         },
                         dataType: 'json',
                         success: function (response) {

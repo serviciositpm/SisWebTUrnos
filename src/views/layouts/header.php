@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user'])) {
-    header('Location: ../auth/login.php');
+    echo "<script>window.top.location.href = '../auth/login.php';</script>";
     exit();
 }
 ?>

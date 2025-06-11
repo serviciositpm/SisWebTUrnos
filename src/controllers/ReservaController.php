@@ -265,10 +265,25 @@ class ReservaController
     private function getCamaroneras()
     {
         try {
-            // Limpiar buffer
-            if (ob_get_length()) {
-                ob_clean();
+
+            // Iniciar sesión si no está iniciada
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
             }
+
+            // Obtener código de usuario de la sesión
+            $codUsuario = $_SESSION['user']['usuacod'] ?? null;
+
+            // Verificar si el usuario está logueado
+            if (!$codUsuario) {
+                header("HTTP/1.1 401 Unauthorized");
+                echo json_encode(["error" => "Usuario no autenticado"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            // Limpiar buffer
+            /* if (ob_get_length()) {
+                ob_clean();
+            } */
 
             // Establecer encabezados con charset UTF-8
             header('Content-Type: application/json; charset=utf-8');
