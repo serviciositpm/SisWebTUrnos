@@ -11,7 +11,7 @@ if (!isset($_SESSION['user'])) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Simera | Sistema Gestion Turnos</title>
+    <title>Sirema | Sistema Gestion Turnos</title>
 
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet"
@@ -105,7 +105,7 @@ if (!isset($_SESSION['user'])) {
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
                         data-accordion="false">
-                        <li class="nav-header">SIMERA</li>
+                        <li class="nav-header">SIREMA</li>
                         <?php if (isset($_SESSION['menu']) && !empty($_SESSION['menu'])): ?>
                             <?php foreach ($_SESSION['menu'] as $item): ?>
                                 <?php if (isset($item['main']) && is_array($item['main'])): ?>

@@ -29,7 +29,8 @@ class ReservaController
                         'obtenerDetalleReserva', 
                         'obtenerReservas',
                         'validarKilosDisponibles',
-                        'getHorariosBloqueados'
+                        'getHorariosBloqueados',
+                        'obtenerDatosGrafico'
                     ];
 
         // Acciones que deben ser POST
@@ -82,6 +83,9 @@ class ReservaController
                 break;
             case 'cambiarEstadoDetalle':
                 $this->cambiarEstadoDetalle();  
+                break;
+            case 'obtenerDatosGrafico':
+                $this->obtenerDatosGrafico();
                 break;
             default:
                 header("HTTP/1.1 400 Bad Request, Method Not Found");
@@ -261,7 +265,7 @@ class ReservaController
             ]);
         }
     }
-
+    
     private function getCamaroneras()
     {
         try {
@@ -315,7 +319,54 @@ class ReservaController
             exit;
         }
     }
-
+    public function obtenerDatosGrafico()
+    {
+        try {
+            $fecha = $_GET['fecha'] ?? date('Y-m-d');
+            
+            $model = new ReservaModel();
+            $reservas = $model->obtenerReservasPorFiltros($fecha);
+            
+            // Procesar datos para el gráfico
+            $datosGrafico = $this->procesarDatosParaGrafico($reservas);
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $datosGrafico,
+                'fecha' => $fecha
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    private function procesarDatosParaGrafico($reservas)
+    {
+        $datosPorHora = [];
+        
+        foreach ($reservas as $reserva) {
+            $hora = $reserva['GeReHora'];
+            $kilos = (float)$reserva['GeReKilos'];
+            $toneladas = $kilos / 1000; // Convertir a toneladas
+            
+            if (!isset($datosPorHora[$hora])) {
+                $datosPorHora[$hora] = 0;
+            }
+            
+            $datosPorHora[$hora] += $toneladas;
+        }
+        
+        // Ordenar por hora
+        ksort($datosPorHora);
+        
+        return [
+            'horas' => array_keys($datosPorHora),
+            'toneladas' => array_values($datosPorHora)
+        ];
+    }
     private function getProgramasPesca()
     {
         try {
