@@ -276,17 +276,17 @@ class ReservaModel
         return $reserva;
     }
     // Obtener camaroneras activas para el usuario
-    public function getCamaroneras($codUsuario = null)
+    public function getCamaroneras($codUsuario)
     {
-        $sql = "Select	CamaCod,
-                        Replace(Replace(CamaNomCom, 'ñ', 'N'), 'Ñ', 'N') As CamaNomCom
-                From		AGSUCS suc 
-                Inner Join	COCAMA cama
-                On			suc.SucsRefCamaCd = cama.CamaCod";
+        $sql = "Select		Distinct SucsRefCamaCd	As CamaCod,
+                            Replace(Replace(SucsDes, 'ñ', 'N'), 'Ñ', 'N')			As CamaNomCom
+                From		seudys	divsucs
+                Inner Join	AGSUCS	sucs
+                On			sucs.SucsCod	=	divsucs.SucsCod	";
         $params = array();
 
         if (!empty($codUsuario)) {
-            $sql .= " AND sucsjer = ?";
+            $sql .= " AND usuacod = ?";
             $params[] = $codUsuario;
         }
 
@@ -323,11 +323,12 @@ class ReservaModel
                 INNER JOIN COPISC pisc ON pesc.CamaCod = pisc.CamaCod AND pesc.PiscCod = pisc.PiscCod
                 JOIN COCAMA cama ON pesc.CamaCod = cama.CamaCod
                 WHERE PescSta='C' 
-                AND PescFec>=? 
+                --AND PescFec>=?  
+                AND PescFec BETWEEN DATEADD(day, -1, ?) AND DATEADD(day, 2, ?)
                 AND pesc.CamaCod=? 
                 ORDER BY PescFec DESC";
 
-        $params = array($fecha, $camaCod);
+        $params = array($fecha, $fecha, $camaCod);
         $stmt = sqlsrv_query($this->db, $sql, $params);
 
         if ($stmt === false) {
@@ -360,7 +361,8 @@ class ReservaModel
                             d.GeRePescNo,
                             ps.PiscNo,
                             p.PescFecPla as fechaLlegadaPlanta,
-                            d.GeReEstadoDet
+                            d.GeReEstadoDet,
+                            p.PescFec As PescFecha
                     From		GetReservasCab	c
                     Inner Join	GetReservasDet	d
                     On			c.GeReCodigo	=	d.GeReCodigo
@@ -393,6 +395,9 @@ class ReservaModel
             }
             if ($row['fechaLlegadaPlanta'] instanceof DateTime) {
                 $row['fechaLlegadaPlanta'] = $row['fechaLlegadaPlanta']->format('Y-m-d');
+            }
+            if ($row['PescFecha'] instanceof DateTime) {
+                $row['PescFecha'] = $row['PescFecha']->format('Y-m-d');
             }
             if ($row['GeReHora'] instanceof DateTime) {
                 $row['GeReHora'] = $row['GeReHora']->format('H:i:s');

@@ -438,7 +438,7 @@
                         GeRePescNo: $elemento.data('programa'),
                         PiscNo: $elemento.data('piscina'),
                         fechaLlegadaPlanta: $elemento.data('fechaplanta'),
-                        GeReFecha: $elemento.data('fecha'),
+                        PescFecha: $elemento.data('fecha'),
                         GeReHora: $elemento.data('hora'),
                         GeReKilos: $elemento.data('kilos'),
                         GeReEstadoDet: $elemento.data('estado') || 'A', // Asignar estado por defecto
@@ -449,7 +449,20 @@
                     if (!reservaData.GeReCodigo || !reservaData.GeReSecuencia) {
                         throw new Error("No se pudo obtener la información completa de la reserva");
                     }
-                    
+                     if (reservaData.CamaCod !== selectedCamaronera) {
+                        const camaroneraReserva = $elemento.parents('.hour-slot').find('.reservation-item').data('camaronera');
+                        const nombreCamaroneraReserva = $elemento.text().match(/\(([^)]+)\)/)?.[1] || camaroneraReserva;
+                        
+                        Swal.fire({
+                            title: 'Acceso denegado',
+                            html: `No puedes editar esta reserva porque pertenece a otra camaronera.<br><br>
+                                <strong>Camaronera de la reserva:</strong> ${nombreCamaroneraReserva}<br>
+                                <strong>Camaronera seleccionada:</strong> ${$('#camaroneraSelect option:selected').text()}`,
+                            icon: 'warning',
+                            confirmButtonText: 'Entendido'
+                        });
+                        return;
+                    }
                     // Asignar a la variable global
                     reservaSeleccionada = reservaData;
                     /* if (reserva.CamaCod !== selectedCamaronera) {
@@ -581,6 +594,7 @@
                     dataType: 'json',
                     success: function (data) {
                         $('#loadingProgramas').hide();
+                        console.log(data);
                         if (data.length > 0) {
                             $.each(data, function (index, programa) {
                                 var programaHtml = `
@@ -785,6 +799,7 @@
                                 <div class="reservas-hora mt-2">`;
 
                     // Mostrar reservas existentes para esta hora
+                    console.log("Reservas para la hora " + horaFormateada + ":", reservasHora);
                     if (reservasHora.length > 0) {
                         reservasHora.forEach((reserva, index) => {
                             const colorIndex = index % coloresReservas.length;
@@ -809,7 +824,7 @@
                                     data-programa="${reserva.GeRePescNo}"
                                     data-piscina="${reserva.PiscNo}"
                                     data-fechaplanta="${reserva.fechaLlegadaPlanta}"
-                                    data-fecha="${reserva.GeReFecha}"
+                                    data-fecha="${reserva.PescFecha}"
                                     data-hora="${reserva.GeReHora}"
                                     data-kilos="${reserva.GeReKilos}"
                                     data-estado="${reserva.GeReEstadoDet}"
@@ -874,12 +889,22 @@
                     toastr.error('Datos de reserva no válidos');
                     return;
                 }
-                
+                // Validar que la camaronera coincida
+                if (reserva.CamaCod !== selectedCamaronera) {
+                    Swal.fire({
+                        title: 'Acceso denegado',
+                        html: `No puedes editar esta reserva porque pertenece a otra camaronera.<br><br>
+                            <strong>Camaronera de la reserva:</strong> ${reserva.CamaNomCom || reserva.CamaCod}<br>
+                            <strong>Camaronera seleccionada:</strong> ${$('#camaroneraSelect option:selected').text()}`,
+                        icon: 'warning',
+                        confirmButtonText: 'Entendido'
+                    });
+                    return;
+                }
                 // Cambiar título y botón
                 $('#reservaModal .modal-title').html('<i class="fas fa-edit"></i> Editar Reserva');
                 $('#btnGuardarReserva').html('<i class="fas fa-save"></i> Actualizar Reserva');
-                console.log(reserva.GeReEstadoDet, selectedCamaronera);
-                console.log(reserva);
+                console.log("Reserva seleccionada para editar:", reserva);
                 if (reserva.GeReEstadoDet === 'A' && reserva.CamaCod === selectedCamaronera) {
                     $('#btnAnularReserva').show();
                 } else {
@@ -891,11 +916,9 @@
                 $('#modalPrograma').val('Programa #' + reserva.GeRePescNo);
                 const piscina = reserva.PiscNo ? 'Piscina ' + reserva.PiscNo : 'N/A';
                 $('#modalPiscina').val(piscina);
-                const fechaLlegada = reserva.fechaLlegadaPlanta ? 
-                         formatFecha(reserva.fechaLlegadaPlanta) : 
-                         (reserva.PescFecha ? formatFecha(reserva.PescFecha) : 'N/A');
+                const fechaLlegada = reserva.fechaLlegadaPlanta ? formatFecha(reserva.fechaLlegadaPlanta):'N/A';
                 $('#modalFechaLlegadaPlanta').val(fechaLlegada);
-                $('#modalFecha').val(formatFecha(reserva.GeReFecha));
+                $('#modalFecha').val(formatFecha(reserva.PescFecha));
                 $('#modalHora').val(reserva.GeReHora.substring(0, 5));
                 $('#modalKilos').val(reserva.GeReKilos);
                 $('#modalObservaciones').val(reserva.GeReObservaciones);
@@ -937,7 +960,8 @@
                         codigo: reservaId,
                         secuencia: secuencia,
                         nuevoEstado: 'I', // Estado Inactivo/Anulado
-                        usuario: '<?php echo $_SESSION['user']['codigo'] ?? '01005'; ?>'
+                        usuario: '<?php echo $_SESSION['user']['usuacod'] ?? ' '; ?>'
+                        
                     },
                     dataType: 'json',
                     success: function(response) {
@@ -973,7 +997,8 @@
                     toastr.error('No se ha seleccionado un programa');
                     return;
                 }
-
+               
+                $('#btnAnularReserva').hide();
                 // Obtener nombre de camaronera
                 const camaroneraNombre = $('#camaroneraSelect option:selected').text();
 
@@ -982,11 +1007,11 @@
                 $('#modalPrograma').val('Programa #' + selectedPrograma.numero);
                 $('#modalPiscina').val('Piscina ' + $programaSeleccionado.data('piscno'));
                 $('#modalFechaLlegadaPlanta').val(formatFecha($programaSeleccionado.data('fechaplanta')));
-                $('#modalFecha').val(formatFecha(selectedFecha));
+                $('#modalFecha').val(formatFecha($programaSeleccionado.data('pescfec')));
                 $('#modalHora').val(hora);
                 $('#modalKilos').val('');
                 $('#modalObservaciones').val('');
-
+                $('#modalReservaId').val(''); // Limpiar ID de reserva
                 // Mostrar modal
                 $('#reservaModal').modal('show');
             }
@@ -1095,7 +1120,7 @@
                 formData.append('hora', hora);
                 formData.append('kilos', kilos);
                 formData.append('observaciones', observaciones);
-                formData.append('usuario', '<?php echo $_SESSION['user']['codigo'] ?? '01005'; ?>');
+                formData.append('usuario', '<?php echo $_SESSION['user']['usuacod'] ?? '01005'; ?>');
 
                 if (esEdicion) {
                     formData.append('reservaId', reservaId);
@@ -1162,13 +1187,17 @@
             });
             // Función para formatear fecha
             function formatFecha(fechaStr) {
-                const fecha = new Date(fechaStr);
+                // Dividir la fecha en partes para evitar problemas de zona horaria
+                const partes = fechaStr.split('-');
+                const fecha = new Date(partes[0], partes[1] - 1, partes[2]); // Mes es 0-based
+                
                 const options = {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric'
                 };
+                
                 return fecha.toLocaleDateString('es-ES', options);
             }
         });

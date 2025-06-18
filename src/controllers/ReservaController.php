@@ -284,6 +284,7 @@ class ReservaController
                 echo json_encode(["error" => "Usuario no autenticado"], JSON_UNESCAPED_UNICODE);
                 exit;
             }
+            /* print("Usuario: $codUsuario"); */
             // Limpiar buffer
             /* if (ob_get_length()) {
                 ob_clean();
@@ -292,7 +293,7 @@ class ReservaController
             // Establecer encabezados con charset UTF-8
             header('Content-Type: application/json; charset=utf-8');
 
-            $codUsuario = null;
+            //$codUsuario = null;
             $camaroneras = $this->model->getCamaroneras($codUsuario);
 
             // Verificar y convertir caracteres si es necesario
@@ -324,8 +325,8 @@ class ReservaController
         try {
             $fecha = $_GET['fecha'] ?? date('Y-m-d');
             
-            $model = new ReservaModel();
-            $reservas = $model->obtenerReservasPorFiltros($fecha);
+            // Obtener datos de reservas para la fecha seleccionada
+            $reservas = $this->model->obtenerReservasPorFiltros($fecha);
             
             // Procesar datos para el gráfico
             $datosGrafico = $this->procesarDatosParaGrafico($reservas);
@@ -345,26 +346,36 @@ class ReservaController
     
     private function procesarDatosParaGrafico($reservas)
     {
-        $datosPorHora = [];
+        $horasKilos = [];
         
+        // Agrupar kilos por hora
         foreach ($reservas as $reserva) {
-            $hora = $reserva['GeReHora'];
+            $hora = substr($reserva['GeReHora'], 0, 5); // Formato HH:MM
             $kilos = (float)$reserva['GeReKilos'];
-            $toneladas = $kilos / 1000; // Convertir a toneladas
             
-            if (!isset($datosPorHora[$hora])) {
-                $datosPorHora[$hora] = 0;
+            if (!isset($horasKilos[$hora])) {
+                $horasKilos[$hora] = 0;
             }
             
-            $datosPorHora[$hora] += $toneladas;
+            $horasKilos[$hora] += $kilos;
         }
         
         // Ordenar por hora
-        ksort($datosPorHora);
+        ksort($horasKilos);
+        
+        // Convertir a formato para Chart.js y transformar a toneladas
+        $labels = [];
+        $data = [];
+        
+        foreach ($horasKilos as $hora => $kilos) {
+            $labels[] = $hora;
+            $data[] = $kilos / 1000; // Convertir a toneladas
+        }
         
         return [
-            'horas' => array_keys($datosPorHora),
-            'toneladas' => array_values($datosPorHora)
+            'labels' => $labels,
+            'data' => $data,
+            'totalToneladas' => array_sum($data)
         ];
     }
     private function getProgramasPesca()
