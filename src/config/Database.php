@@ -1,8 +1,8 @@
 <?php
 class Database {
-    private $serverName = "10.100.120.8"; // o la IP de tu servidor SQL Server
+    private $serverName = "10.100.120.7"; // o la IP de tu servidor SQL Server
     private $connectionOptions = array(
-        "Database" => "pSipe2", // nombre de tu base de datos
+        "Database" => "sipeDes", // nombre de tu base de datos
         "Uid" => "sa",
         "PWD" => "84+-blaster32"
     );
