@@ -390,6 +390,17 @@ class ReservaController
                 throw new Exception("Datos de programas no válidos");
             }
 
+
+            // Verificar y convertir caracteres si es necesario
+            array_walk_recursive($programas, function (&$item) {
+                if (is_string($item)) {
+                    // Convertir a UTF-8 si no lo está
+                    if (!mb_detect_encoding($item, 'UTF-8', true)) {
+                        $item = utf8_encode($item);
+                    }
+                }
+            });
+
             header('Content-Type: application/json');
             echo json_encode($programas);
         } catch (Exception $e) {
@@ -408,6 +419,14 @@ class ReservaController
             }
 
             $reservas = $this->model->obtenerReservasPorFiltros($fecha);
+            array_walk_recursive($reservas, function (&$item) {
+                if (is_string($item)) {
+                    // Convertir a UTF-8 si no lo está
+                    if (!mb_detect_encoding($item, 'UTF-8', true)) {
+                        $item = utf8_encode($item);
+                    }
+                }
+            });
 
             echo json_encode($reservas);
         } catch (Exception $e) {
