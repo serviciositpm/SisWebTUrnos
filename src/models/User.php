@@ -53,23 +53,25 @@ class User
     {
         // Obtener todas las aplicaciones del usuario ordenadas jerárquicamente
         $sql = "WITH MenuCTE AS (
-            SELECT a.*, 0 AS level 
-            FROM PerfilAplicacionSis pa
-            JOIN SeAplicacionSis a ON pa.SeAplCodigo = a.SeAplCodigo
-            JOIN SEUSUAPERF up ON pa.perfcod = up.perfcod
-            WHERE up.usuacod = ? AND a.SeAplEstado = 'A' AND a.SeAplCodigoSt IS NULL
-            
-            UNION ALL
-            
-            SELECT a.*, m.level + 1
-            FROM SeAplicacionSis a
-            JOIN MenuCTE m ON a.SeAplCodigoSt = m.SeAplCodigo
-            WHERE a.SeAplEstado = 'A'
-        )
-        SELECT * FROM MenuCTE
-        ORDER BY level, SeAplOrden";
+                SELECT a.*, 0 AS level 
+                FROM PerfilAplicacionSis pa
+                JOIN SeAplicacionSis a ON pa.SeAplCodigo = a.SeAplCodigo
+                JOIN SEUSUAPERF up ON pa.perfcod = up.perfcod
+                WHERE up.usuacod = ? AND a.SeAplEstado = 'A' AND a.SeAplCodigoSt IS NULL
+                
+                UNION ALL
+                
+                SELECT a.*, m.level + 1
+                FROM SeAplicacionSis a
+                JOIN MenuCTE m ON a.SeAplCodigoSt = m.SeAplCodigo
+                JOIN PerfilAplicacionSis pa ON a.SeAplCodigo = pa.SeAplCodigo
+                JOIN SEUSUAPERF up ON pa.perfcod = up.perfcod
+                WHERE a.SeAplEstado = 'A' AND up.usuacod = ?
+            )
+            SELECT * FROM MenuCTE
+            ORDER BY level, SeAplOrden";
 
-        $params = array($userId);
+        $params = array($userId, $userId);
         $stmt = sqlsrv_query($this->db, $sql, $params);
 
         $menu = array();
