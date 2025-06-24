@@ -312,7 +312,7 @@ class ReservaModel
     // Obtener programas de pesca
     public function getProgramasPesca($camaCod, $fecha)
     {
-        $sql = "SELECT TOP 5 
+        $sql = "SELECT 
                     pesc.PescFec, 
                     pesc.PescNo, 
                     pesc.PescCanRea,
