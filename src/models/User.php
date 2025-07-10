@@ -101,5 +101,17 @@ class User
 
         return $menu;
     }
+    public function updatePassword($userId, $newPassword)
+    {
+        $sql = "UPDATE SEUSUA SET UsuaClave = ? WHERE usuacod = ?";
+        $params = array($newPassword, $userId);
+        $stmt = sqlsrv_query($this->db, $sql, $params);
+
+        if ($stmt === false) {
+            die("Error al actualizar la contraseña: " . print_r(sqlsrv_errors(), true));
+        }
+
+        return sqlsrv_rows_affected($stmt) > 0;
+    }
 }
 ?>

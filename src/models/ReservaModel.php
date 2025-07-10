@@ -318,7 +318,13 @@ class ReservaModel
                     pesc.PescCanRea,
                     pisc.PiscNo,
                     cama.CamaNomCom,
-                    pesc.PescFecPla as fechaLlegadaPlanta
+                    pesc.PescFecPla as fechaLlegadaPlanta,
+                    Case
+                        When PescMotCos = 'V'
+                            Then 'Viva'	
+                        Else
+                            'Tradicional'
+                    End 'tipoPesca'
                 FROM COPESC pesc
                 INNER JOIN COPISC pisc ON pesc.CamaCod = pisc.CamaCod AND pesc.PiscCod = pisc.PiscCod
                 JOIN COCAMA cama ON pesc.CamaCod = cama.CamaCod

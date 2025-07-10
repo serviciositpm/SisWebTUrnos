@@ -193,6 +193,24 @@
                 flex: 0 0 100%;
             }
         }
+        .tipo-pesca {
+            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            display: inline-block;
+            margin-top: 3px;
+        }
+        .tipo-pesca-viva {
+            background-color: #3F7D58;
+            color: white;
+            border: 1px solid #218838;
+        }
+        .tipo-pesca-tradicional {
+            background-color: #3D74B6;
+            color: white;
+            border: 1px solid #138496;
+        }
     </style>
 </head>
 
@@ -342,7 +360,10 @@
                         <div class="form-group">
                             <label>Programa de Pesca:</label>
                             <input type="text" class="form-control" id="modalPrograma" readonly>
+                            <!-- <small class="text-muted" id="modalTipoPesca"></small> -->
+                             <div id="modalTipoPesca" class="mt-1"></div> 
                         </div>
+                        
                         <div class="form-group">
                             <label>Piscina:</label>
                             <input type="text" class="form-control" id="modalPiscina" readonly>
@@ -603,19 +624,24 @@
                                     data-pescfec="${programa.PescFec}"
                                     data-pesccant="${programa.PescCanRea}"
                                     data-piscno="${programa.PiscNo}"
-                                    data-fechaplanta="${programa.fechaLlegadaPlanta}">
+                                    data-fechaplanta="${programa.fechaLlegadaPlanta}"
+                                    data-tipopesca="${programa.tipoPesca}">                                    
                                     <span class="info-box-icon bg-info"><i class="fas fa-shrimp"></i></span>
                                     <div class="info-box-content">
                                         <span class="info-box-text">
                                             <strong>Programa #${programa.PescNo} - Piscina ${programa.PiscNo}</strong>
                                         </span>
                                         <span class="info-box-number">${(programa.PescCanRea / 1000).toFixed(2)} Ton</span>
+                                        <span class="tipo-pesca ${programa.tipoPesca === 'Viva' ? 'tipo-pesca-viva' : 'tipo-pesca-tradicional'}">
+                                            ${programa.tipoPesca}
+                                        </span>                                        
                                         <div class="progress">
                                             <div class="progress-bar" style="width: 70%"></div>
                                         </div>
                                         <span class="progress-description">
                                             ${formatFecha(programa.PescFec)} - ${programa.CamaNomCom}
                                         </span>
+                                        
                                     </div>
                                 </div>
                             `;
@@ -914,6 +940,12 @@
                 $('#modalReservaId').val(reserva.GeReCodigo);
                 $('#modalCamaronera').val(reserva.CamaNomCom || $('#camaroneraSelect option:selected').text());
                 $('#modalPrograma').val('Programa #' + reserva.GeRePescNo);
+                /* $('#modalTipoPesca').text('Tipo: ' + (reserva.tipoPesca || 'Tradicional')); // Mostrar tipo de pesca */
+                $('#modalTipoPesca').html(`
+                    Tipo: <span class="tipo-pesca ${reserva.tipoPesca === 'Viva' ? 'tipo-pesca-viva' : 'tipo-pesca-tradicional'}">
+                        ${reserva.tipoPesca || 'Tradicional'}
+                    </span>
+                `);
                 const piscina = reserva.PiscNo ? 'Piscina ' + reserva.PiscNo : 'N/A';
                 $('#modalPiscina').val(piscina);
                 const fechaLlegada = reserva.fechaLlegadaPlanta ? formatFecha(reserva.fechaLlegadaPlanta):'N/A';
@@ -1004,7 +1036,15 @@
 
                 // Llenar datos en el modal
                 $('#modalCamaronera').val(camaroneraNombre);
+                /* const $programaSeleccionado = $('.info-box-programa.selected'); */
                 $('#modalPrograma').val('Programa #' + selectedPrograma.numero);
+                /* $('#modalTipoPesca').text('Tipo: ' + ($programaSeleccionado.data('tipopesca') || 'Tradicional')); // Mostrar tipo de pesca */
+                const tipoPesca = $programaSeleccionado.data('tipopesca') || 'Tradicional';
+                $('#modalTipoPesca').html(`
+                    Tipo: <span class="tipo-pesca ${tipoPesca === 'Viva' ? 'tipo-pesca-viva' : 'tipo-pesca-tradicional'}">
+                        ${tipoPesca}
+                    </span>
+                `);
                 $('#modalPiscina').val('Piscina ' + $programaSeleccionado.data('piscno'));
                 $('#modalFechaLlegadaPlanta').val(formatFecha($programaSeleccionado.data('fechaplanta')));
                 $('#modalFecha').val(formatFecha($programaSeleccionado.data('pescfec')));
