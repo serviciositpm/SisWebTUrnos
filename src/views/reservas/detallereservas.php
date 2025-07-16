@@ -12,6 +12,25 @@
 
 
 ?>
+<style>
+    /* Estilo para los selects múltiples */
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice {
+        background-color: #007bff;
+        border-color: #006fe6;
+        color: white;
+        padding: 0 5px;
+        margin-top: 0.31rem;
+    }
+    
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice__remove {
+        color: rgba(255,255,255,0.7);
+        margin-right: 3px;
+    }
+    
+    .select2-container--bootstrap4 .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: white;
+    }
+</style>
 
 <div class="content-wrapper" style="min-height: 901px;">
     <section class="content-header">
@@ -62,12 +81,20 @@
                                     <input type="time" id="hora" name="hora" class="form-control">
                                 </div>
                             </div>
-                            <div class="col-md-2 col-6">
+                            <!-- <div class="col-md-2 col-6">
                                 <div class="form-group">
                                     <label><i class="fas fa-water"></i> Camaronera</label>
                                     <select id="camaCod" name="camaCod" class="form-control select2"
                                         style="width: 100%;">
                                         <option value="">-- Seleccione --</option>
+                                        Se llenará por AJAX
+                                    </select>
+                                </div>
+                            </div> -->
+                            <div class="col-md-3 col-6">
+                                <div class="form-group">
+                                    <label><i class="fas fa-water"></i> Camaronera</label>
+                                    <select id="camaCod" name="camaCod[]" class="form-control select2" style="width: 100%;" multiple="multiple">
                                         <!-- Se llenará por AJAX -->
                                     </select>
                                 </div>
@@ -86,11 +113,22 @@
                                         placeholder="Número de piscina">
                                 </div>
                             </div>
-                            <div class="col-md-2 col-6">
+                            <!-- <div class="col-md-2 col-6">
                                 <div class="form-group">
                                     <label><i class="fas fa-toggle-on"></i> Estado</label>
                                     <select id="estado" name="estado" class="form-control select2" style="width: 100%;">
                                         <option value="">Todos</option>
+                                        <option value="A">Activa</option>
+                                        <option value="P">Aprobada</option>
+                                        <option value="R">Rechazada</option>
+                                        <option value="I">Anulada</option>
+                                    </select>
+                                </div>
+                            </div> -->
+                            <div class="col-md-2 col-6">
+                                <div class="form-group">
+                                    <label><i class="fas fa-toggle-on"></i> Estado</label>
+                                    <select id="estado" name="estado[]" class="form-control select2" style="width: 100%;" multiple="multiple">
                                         <option value="A">Activa</option>
                                         <option value="P">Aprobada</option>
                                         <option value="R">Rechazada</option>
@@ -187,7 +225,9 @@
 
         // Inicializar select2
         $('.select2').select2({
-            theme: 'bootstrap4'
+            theme: 'bootstrap4',
+            placeholder: 'Seleccione opciones',
+            allowClear: true
         });
 
         // Cargar camaroneras
@@ -262,10 +302,10 @@
             var filtros = {
                 fecha: $('#fecha').val(),
                 hora: $('#hora').val(),
-                camaCod: $('#camaCod').val(),
+                camaCod: $('#camaCod').val() || [], // Array de códigos de camaroneras
                 pescNo: $('#pescNo').val(),
                 piscina: $('#piscina').val(),
-                estado: $('#estado').val()
+                estado: $('#estado').val() || [] // Array de estados
             };
             console.log("Enviando filtros:", filtros); // Verifica los filtros enviados
             $.ajax({

@@ -47,9 +47,11 @@ class ReservaModel
         }
 
         if (!empty($filtros['camaCod'])) {
-            $sql .= " AND d.CamaCod = ?";
-            $params[] = $filtros['camaCod'];
+            $placeholders = implode(',', array_fill(0, count($filtros['camaCod']), '?'));
+            $sql .= " AND d.CamaCod IN ($placeholders)";
+            $params = array_merge($params, $filtros['camaCod']);
         }
+
 
         if (!empty($filtros['pescNo'])) {
             $sql .= " AND d.GeRePescNo LIKE ?";
@@ -62,8 +64,9 @@ class ReservaModel
 
 
         if (!empty($filtros['estado'])) {
-            $sql .= " AND d.GeReEstadoDet = ?";
-            $params[] = $filtros['estado'];
+            $placeholders = implode(',', array_fill(0, count($filtros['estado']), '?'));
+            $sql .= " AND d.GeReEstadoDet IN ($placeholders)";
+            $params = array_merge($params, $filtros['estado']);
         }
 
         $sql .= " ORDER BY c.GeReFecha DESC, d.GeReHora ASC";

@@ -127,14 +127,21 @@ class ReservaController
             // Limpiar buffer y establecer cabeceras con UTF-8
             if (ob_get_length()) ob_clean();
             header('Content-Type: application/json; charset=utf-8');
+            // Obtener parámetros como arrays
+            $fecha = $_GET['fecha'] ?? null;
+            $hora = $_GET['hora'] ?? null;
+            $camaCod = isset($_GET['camaCod']) ? (array)$_GET['camaCod'] : [];
+            $pescNo = $_GET['pescNo'] ?? null;
+            $piscina = $_GET['piscina'] ?? null;
+            $estado = isset($_GET['estado']) ? (array)$_GET['estado'] : [];
 
             $filtros = [
-                'fecha' => $_GET['fecha'] ?? null,
-                'hora' => $_GET['hora'] ?? null,
-                'camaCod' => $_GET['camaCod'] ?? null,
-                'pescNo' => $_GET['pescNo'] ?? null,
-                'piscina' => $_GET['piscina'] ?? null,
-                'estado' => $_GET['estado'] ?? null
+                'fecha' => $fecha,
+                'hora' => $hora,
+                'camaCod' => $camaCod,
+                'pescNo' => $pescNo,
+                'piscina' => $piscina,
+                'estado' => $estado
             ];
 
             $reservas = $this->model->obtenerReservasFiltradas($filtros);
