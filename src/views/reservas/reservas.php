@@ -421,7 +421,7 @@
         function seleccionarReserva(element) {
             event.stopPropagation();
             reservaSeleccionada = JSON.parse($(element).data('reserva'));
-
+            console.log("Reserva seleccionada:", reservaSeleccionada);
             // Verificar si la reserva pertenece a la camaronera seleccionada
             if (reservaSeleccionada.CamaCod === selectedCamaronera) {
                 abrirModalEdicion(reservaSeleccionada);
@@ -463,7 +463,8 @@
                         GeReHora: $elemento.data('hora'),
                         GeReKilos: $elemento.data('kilos'),
                         GeReEstadoDet: $elemento.data('estado') || 'A', // Asignar estado por defecto
-                        GeReObservaciones: $elemento.data('observaciones') || ''
+                        GeReObservaciones: $elemento.data('observaciones') || '',
+                        tipoPesca: $elemento.data('tipopesca') || 'Tradicional'
                     };
                     
                     // Validar datos mínimos
@@ -855,6 +856,7 @@
                                     data-kilos="${reserva.GeReKilos}"
                                     data-estado="${reserva.GeReEstadoDet}"
                                     data-observaciones="${reserva.GeReObservaciones || ''}"
+                                    data-tipopesca="${reserva.tipoPesca || 'Tradicional'}" 
                                     data-toggle="tooltip"
                                     title="${tooltipContent}">
                                     ${reserva.GeRePescNo || 'Prog.'} - Pisc ${reserva.PiscNo}: ${toneladas} T (${reserva.CamaNomCom})
@@ -936,16 +938,23 @@
                 } else {
                     $('#btnAnularReserva').hide();
                 }
+                const tipoPesca = reserva.tipoPesca || 'Tradicional';
+                console.log("Tipo de pesca:", tipoPesca);
                 // Llenar datos en el modal
                 $('#modalReservaId').val(reserva.GeReCodigo);
                 $('#modalCamaronera').val(reserva.CamaNomCom || $('#camaroneraSelect option:selected').text());
                 $('#modalPrograma').val('Programa #' + reserva.GeRePescNo);
                 /* $('#modalTipoPesca').text('Tipo: ' + (reserva.tipoPesca || 'Tradicional')); // Mostrar tipo de pesca */
-                $('#modalTipoPesca').html(`
+                 $('#modalTipoPesca').html(`
+                    Tipo: <span class="tipo-pesca ${tipoPesca === 'Viva' ? 'tipo-pesca-viva' : 'tipo-pesca-tradicional'}">
+                        ${tipoPesca}
+                    </span>
+                `);
+                /* $('#modalTipoPesca').html(`
                     Tipo: <span class="tipo-pesca ${reserva.tipoPesca === 'Viva' ? 'tipo-pesca-viva' : 'tipo-pesca-tradicional'}">
                         ${reserva.tipoPesca || 'Tradicional'}
                     </span>
-                `);
+                `); */
                 const piscina = reserva.PiscNo ? 'Piscina ' + reserva.PiscNo : 'N/A';
                 $('#modalPiscina').val(piscina);
                 const fechaLlegada = reserva.fechaLlegadaPlanta ? formatFecha(reserva.fechaLlegadaPlanta):'N/A';

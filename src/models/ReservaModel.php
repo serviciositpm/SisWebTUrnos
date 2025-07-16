@@ -368,7 +368,13 @@ class ReservaModel
                             ps.PiscNo,
                             p.PescFecPla as fechaLlegadaPlanta,
                             d.GeReEstadoDet,
-                            p.PescFec As PescFecha
+                            p.PescFec As PescFecha,
+                            Case
+                                When PescMotCos = 'V'
+                                    Then 'Viva'	
+                                Else
+                                    'Tradicional'
+                            End 'tipoPesca'
                     From		GetReservasCab	c
                     Inner Join	GetReservasDet	d
                     On			c.GeReCodigo	=	d.GeReCodigo
